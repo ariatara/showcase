@@ -2,7 +2,7 @@ Steps for running the project locally on development box:
 
 1. Installations:
 
-   i. MySQL
+   i. MySQL (Server)
    ii. MySQL client (DBSchema or similar)
    iii. Node.js
    iv. Express.js
