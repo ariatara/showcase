@@ -2,30 +2,30 @@ Steps for running the project locally on development box:
 
 1. Installations:
 
-   i. MySQL (Server)
+   i. MySQL server
    ii. MySQL client (DBSchema or similar)
    iii. Node.js
    iv. Express.js
 
 2. Clone the repository https://github.com/ariatara/showcase.git.
 
-3. Open the MySQL client and create a database named "uttoron" (can be anything but will need less changes in the steps below).
+3. Open the MySQL client and create a database named "showcase" (can be anything but will need less changes in the steps below).
 
-4. Open the SQL Editor window (this may vary with the MySQL client you are using) and paste the script from uttoron\datastore\Schema\BackendSchema.mysql.sql
+4. Open the SQL Editor window (this may vary with the MySQL client you are using) and paste the script from showcase\datastore\Schema\BackendSchema.mysql.sql
 
 5. Select the Run Script option (this may vary with the MySQL client you are using) which will create and pre-populate some of the tables.
 
-6. Update the database connection details in uttoron/backend/Utilities/Datastore.js (if database name is uttoron update "user:" and "password:", else update "database" also)
+6. Update the database connection details in showcase/backend/Utilities/Datastore.js (if database name is showcase update "user:" and "password:", else update "database" also)
 
-7. In uttoron/backend run "npm install" at the terminal. This will install all the dependencies for the backend service in node_modules folder.
+7. In showcase/backend run "npm install" at the terminal. This will install all the dependencies for the backend service in node_modules folder.
 
-8. In uttoron/backend run "npm start" at the terminal. This should bring up the backend service. You should see the following lines:
+8. In showcase/backend run "npm start" at the terminal. This should bring up the backend service. You should see the following lines:
    Server is running.
    Database connection successful
 
-9. In uttoron/frontend run "npm install" at the terminal. This will install all the dependencies for the frontend service in node_modules folder.
+9. In showcase/frontend run "npm install" at the terminal. This will install all the dependencies for the frontend service in node_modules folder.
 
-10. In uttoron/frontend run "npm run dev" at the terminal. This should bring up the frontend service. You should see similar to following lines:
+10. In showcase/frontend run "npm run dev" at the terminal. This should bring up the frontend service. You should see similar to following lines:
     ➜ Local: http://localhost:5173/
     ➜ Network: use --host to expose
     ➜ press h + enter to show help
@@ -49,7 +49,7 @@ Steps for running the project locally on development box:
 19. Enter another details and create your second account. After the account is created successfully you will be sent to the login page.
 
 20. Open the SQL Editor window (this may vary with the MySQL client you are using) and paste the following script:
-    INSERT INTO uttoron.account_roles
+    INSERT INTO showcase.account_roles
     (account_email, account_role) VALUES ("<Enter the email address of the second account>", "Administrator");
 
 21. Select the Run Script option (this may vary with the MySQL client you are using) which will give the second account the "Administrator" role.
