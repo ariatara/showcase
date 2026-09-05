@@ -7,7 +7,7 @@ Steps for running the project locally on development box:
    iii. Node.js
    iv. Express.js
 
-2. Clone the repository https://github.com/Uttoron-Seattle/uttoron.git.
+2. Clone the repository https://github.com/ariatara/showcase.git.
 
 3. Open the MySQL client and create a database named "uttoron" (can be anything but will need less changes in the steps below).
 
