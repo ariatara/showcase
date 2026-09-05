@@ -1,3 +1,8 @@
+# Showcase
+
+For the current architecture, contributor workflow, verified setup path, and known
+limitations, see [New Contributor Onboarding Design](docs/contributor-onboarding-design.md).
+
 Steps for running the project locally on development box:
 
 1. Installations:
