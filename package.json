@@ -1,0 +1,23 @@
+{
+  "name": "showcase",
+  "version": "1.0.0",
+  "description": "Steps for running the project locally on development box:",
+  "homepage": "https://github.com/ariatara/showcase#readme",
+  "bugs": {
+    "url": "https://github.com/ariatara/showcase/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ariatara/showcase.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
