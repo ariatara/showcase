@@ -1,0 +1,45 @@
+.loginPage {
+  background: url("Images/Seattle-Night.jpg");
+  /*background: linear-gradient(rgba(11, 11, 11, 0.5), rgba(10, 10, 10, 0.5)),
+      url("Images/Kolkata-Seattle.jpg");*/
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.loginForm {
+  /*background-color: rgba(196, 65, 26);*/
+  backdrop-filter: blur(4px);
+  color: white;
+  position: relative;
+  height: auto;
+  width: auto;
+}
+
+.loginButton {
+  display: inline-block;
+  padding: 8px 32px;
+  border: 0;
+  border-radius: 10px;
+  background-color: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(100px);
+  color: orangered;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.loginButton:hover {
+  color: orangered;
+  background-color: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.loginLink {
+  color: white;
+  font-weight: normal;
+  text-decoration: none;
+}

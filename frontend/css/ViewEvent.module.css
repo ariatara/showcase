@@ -1,0 +1,127 @@
+.eventBanner {
+  margin-bottom: 1px;
+  padding-bottom: 1px;
+}
+
+.eventBannerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  background-size: cover;
+  background-position: center top;
+  height: 50vh;
+  width: 90%;
+  margin: auto;
+  margin-bottom: 50px;
+}
+
+.eventBannerContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 50%;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  height: 75%;
+}
+
+.eventTitle {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: orangered;
+  height: 10%;
+}
+
+.eventDate {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  height: 20%;
+}
+
+.eventVenue {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  height: 10%;
+}
+
+.eventDivider {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  opacity: 50%;
+  border-color: #ffffffb0;
+  -webkit-filter: blur(1px);
+  filter: blur(1px);
+}
+
+/* Upper Section */
+
+.eventUpperSection {
+  margin-bottom: 1px;
+}
+
+.eventUpperContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-size: contain;
+  background-position: center;
+  height: 50vh;
+  width: 90%;
+  margin: auto;
+}
+
+.eventUpperContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  background-color: rgba(255, 69, 0, 0.5);
+  width: 50%;
+  height: 75%;
+  padding: 25px;
+  font-size: 1.25rem;
+}
+
+/* Lower Section */
+
+.eventLowerSection {
+  margin-bottom: 1px;
+}
+
+.eventLowerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  background-size: contain;
+  background-position: center;
+  height: auto;
+  width: 90%;
+  margin: auto;
+}
+
+.eventLowerContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: rgba(255, 69, 0, 0.5);
+  width: 50%;
+  height: auto;
+  padding: 25px;
+  font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .eventBannerContainer {
+    margin-top: 100px;
+  }
+  .eventBannerContent,
+  .eventUpperContent,
+  .eventLowerContent {
+    width: 90%;
+    padding: 15px;
+    text-size-adjust: 75%;
+  }
+}
