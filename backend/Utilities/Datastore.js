@@ -4,7 +4,7 @@ const DatastoreConnection = MySQL.createConnection({
   host: "localhost",
   user: "root",
   password: "rdPa$$w0rd@@",
-  database: "uttoron",
+  database: "showcase",
 });
 
 DatastoreConnection.connect(function (error) {

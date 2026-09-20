@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeSlash } from "phosphor-react";
 import { ROLES } from "../../Configurations/Roles";
 import loginStyle from "../../../css/Login.module.css";
 
@@ -11,6 +12,8 @@ const AccountLogin = () => {
   });
 
   const [error, setError] = useState();
+  const [showPassword, setShowPassword] = useState(false);
+  const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
   const NavigateTo = useNavigate();
   Axios.defaults.withCredentials = true;
 
@@ -65,6 +68,7 @@ const AccountLogin = () => {
               className="form-control rounded-0"
               type="email"
               name="email"
+              required
               autoComplete="off"
               placeholder="Enter Email"
               onChange={(e) =>
@@ -76,38 +80,64 @@ const AccountLogin = () => {
             />
           </div>
           <div className="passwordForm my-3">
-            <input
-              className="form-control rounded-0"
-              type="password"
-              name="password"
-              placeholder="Enter Password"
-              onChange={(e) =>
-                setAccountDetails({
-                  ...accountDetails,
-                  account_password: e.target.value,
-                })
-              }
-            />
+            <div className="position-relative">
+              <input
+                className="form-control rounded-0 pe-5"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                required
+                placeholder="Enter Password"
+                onChange={(e) =>
+                  setAccountDetails({
+                    ...accountDetails,
+                    account_password: e.target.value,
+                  })
+                }
+              />
+              <button
+                type="button"
+                className={loginStyle.passwordToggle}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? (
+                  <EyeSlash size={20} aria-hidden="true" />
+                ) : (
+                  <Eye size={20} aria-hidden="true" />
+                )}
+              </button>
+            </div>
             <Link to={"/resetPassword"} className={`${loginStyle.loginLink}`}>
               Forgot Password?
             </Link>
           </div>
           <div className={`${loginStyle.loginLink} text-center`}>
-            <button className={`${loginStyle.loginButton} my-2`}>
-              Sign In
-            </button>
             <div className="agreementBox">
               <input
                 className="agreementCheck me-1"
                 type="checkbox"
                 name="tick"
                 id="tick"
-                checked={true}
-                disabled={true}
+                checked={hasAcceptedAgreement}
+                onChange={(e) => setHasAcceptedAgreement(e.target.checked)}
+                required
               />
-              <label htmlFor="Agreement">
+              <label htmlFor="tick">
                 I have read the Membership Agreement
               </label>
+            </div>
+            <div>
+              <button
+                type="submit"
+                className={`${loginStyle.loginButton} my-2`}
+                disabled={
+                  !accountDetails.account_email ||
+                  !accountDetails.account_password ||
+                  !hasAcceptedAgreement
+                }
+              >
+                Sign In
+              </button>
             </div>
             <Link
               to={"/createAccount"}
