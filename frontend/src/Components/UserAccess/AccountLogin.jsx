@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeSlash } from "phosphor-react";
@@ -14,8 +14,69 @@ const AccountLogin = () => {
   const [error, setError] = useState();
   const [showPassword, setShowPassword] = useState(false);
   const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const loginFormRef = useRef(null);
+  const dragRef = useRef(null);
   const NavigateTo = useNavigate();
   Axios.defaults.withCredentials = true;
+
+  useEffect(() => {
+    const resetPosition = () => {
+      dragRef.current = null;
+      setIsDragging(false);
+      setPosition({ x: 0, y: 0 });
+    };
+    window.addEventListener("resize", resetPosition);
+    return () => window.removeEventListener("resize", resetPosition);
+  }, []);
+
+  const handleDragStart = (event) => {
+    if (event.button !== 0 || !event.isPrimary || dragRef.current) return;
+    if (event.target.closest("input, button, a, label, [data-no-drag]")) return;
+
+    const bounds = loginFormRef.current.getBoundingClientRect();
+    const topBoundary =
+      document.getElementById("MainNavigation")?.getBoundingClientRect().bottom ?? 0;
+    const minX = position.x - bounds.left;
+    const minY = position.y - bounds.top + topBoundary;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX - position.x,
+      startY: event.clientY - position.y,
+      minX,
+      minY,
+      maxX: minX + Math.max(0, document.documentElement.clientWidth - bounds.width),
+      maxY: minY + Math.max(0, window.innerHeight - topBoundary - bounds.height),
+    };
+    setIsDragging(true);
+    event.preventDefault();
+  };
+
+  const handleDragMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      handleDragEnd(event);
+      return;
+    }
+
+    setPosition({
+      x: Math.max(drag.minX, Math.min(drag.maxX, event.clientX - drag.startX)),
+      y: Math.max(drag.minY, Math.min(drag.maxY, event.clientY - drag.startY)),
+    });
+  };
+
+  const handleDragEnd = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      setIsDragging(false);
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const handleLogin = (event) => {
     event.preventDefault();
@@ -56,12 +117,22 @@ const AccountLogin = () => {
       className={`${loginStyle.loginPage} d-flex justify-content-center align-items-center vh-100`}
     >
       <div
-        className={`${loginStyle.loginForm} p-5 rounded-5 border text-orangered`}
+        ref={loginFormRef}
+        className={`${loginStyle.loginForm} ${isDragging ? loginStyle.dragging : ""} p-5 rounded-5 border text-orangered`}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        title="Drag an empty area to move the login window"
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onLostPointerCapture={handleDragEnd}
       >
         <div className={`${loginStyle.loginError} text-warning`}>
-          {error && error}
+          {error && <span data-no-drag>{error}</span>}
         </div>
-        <h3>Account Login</h3>
+        <h3>
+          <span data-no-drag>Account Login</span>
+        </h3>
         <form onSubmit={handleLogin}>
           <div className="emailForm my-3">
             <input
