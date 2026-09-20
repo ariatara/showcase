@@ -120,7 +120,6 @@ const AccountLogin = () => {
         ref={loginFormRef}
         className={`${loginStyle.loginForm} ${isDragging ? loginStyle.dragging : ""} p-5 rounded-5 border text-orangered`}
         style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-        title="Drag an empty area to move the login window"
         onPointerDown={handleDragStart}
         onPointerMove={handleDragMove}
         onPointerUp={handleDragEnd}
