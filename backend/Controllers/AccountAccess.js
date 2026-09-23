@@ -124,3 +124,29 @@ export const logoutAccountAccess = (request, response) => {
   response.clearCookie("loginToken");
   return response.json({ Status: true });
 };
+
+export const generatePasswordCode = (request, response) => {
+  // const account_email = request.params.account_email;
+  // const old_account_password = request.params.account_password;
+  var reset_code = Math.floor(100000 + Math.random() * 900000);
+
+  const SQLPasswordResetQuery =
+    "INSERT INTO password_reset(account_email, old_account_password, reset_code) VALUES (?)";
+
+  const passwordResetDetails = [request.params.account_email, request.params.account_password, reset_code];
+
+  DatastoreConnection.query(
+    SQLPasswordResetQuery,
+    [passwordResetDetails],
+    (error, result) => {
+      if (error) {
+        console.log("Password reset code assignment failed: " + error);
+
+        return response.json({
+          Status: false,
+          Error: "Password reset code generation failed.",
+        });
+      }
+    }
+  );
+}

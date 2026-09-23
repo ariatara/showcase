@@ -200,6 +200,22 @@ ALTER TABLE showcase.non_member_products ADD CONSTRAINT fk_non_member_products_e
 
 ALTER TABLE showcase.non_member_products ADD CONSTRAINT fk_non_member_products_type_product_types_name FOREIGN KEY ( `type` ) REFERENCES showcase.product_types( `type` ) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
+/*
+showcase Password Reset
+*/
+
+CREATE TABLE IF NOT EXISTS showcase.password_reset (
+	id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	account_email VARCHAR(128) NOT NULL,
+	old_account_password VARCHAR(256),
+	reset_code INT NOT NULL,
+	expiry_date DATETIME  DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE)) NOT NULL,
+	CONSTRAINT unq_accounts UNIQUE ( account_email )
+);
+
+CREATE INDEX idx_account_email ON showcase.password_reset ( account_email );
+
+ALTER TABLE showcase.password_reset ADD CONSTRAINT fk_accounts_account_email FOREIGN KEY ( account_email ) REFERENCES showcase.accounts ( account_email ) ON DELETE CASCADE ON UPDATE CASCADE;
 
 /*
 Initial Table Values
