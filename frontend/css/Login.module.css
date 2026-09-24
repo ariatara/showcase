@@ -16,6 +16,7 @@
   position: relative;
   height: auto;
   width: auto;
+  cursor: grab;
 }
 
 .loginButton {
@@ -30,6 +31,24 @@
   font-weight: bold;
   cursor: pointer;
   text-decoration: none;
+}
+
+.loginForm.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.loginForm [data-no-drag] {
+  cursor: text;
+}
+
+.loginForm label,
+.loginForm input[type="checkbox"] {
+  cursor: default;
+}
+
+.loginForm a {
+  cursor: pointer;
 }
 
 .loginButton:hover:not(:disabled) {
