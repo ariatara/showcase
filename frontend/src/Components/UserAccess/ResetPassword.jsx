@@ -130,7 +130,7 @@ const ResetPassword = () => {
 					<>
 						<h3>Enter reset code</h3>
 						<p>
-							For testing, your reset code is <strong>{displayedCode}</strong>.
+							The reset code is <strong>{displayedCode}</strong>. Please enter it below to complete verification.
 						</p>
 						<form onSubmit={handleCodeSubmit}>
 							<input
