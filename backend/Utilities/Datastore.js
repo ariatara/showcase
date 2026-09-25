@@ -3,7 +3,7 @@ import MySQL from "mysql2";
 const DatastoreConnection = MySQL.createConnection({
   host: "localhost",
   user: "root",
-  password: "rdPa$$w0rd@@",
+  password: "lily1921",
   database: "showcase",
 });
 

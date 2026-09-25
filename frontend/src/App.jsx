@@ -27,6 +27,7 @@ import AdminRoutes from "./Components/RouteManagement/AdminRoutes";
 
 import CreateAccount from "./Components/UserAccess/CreateAccount";
 import AccountLogin from "./Components/UserAccess/AccountLogin";
+import ResetPassword from "./Components/UserAccess/ResetPassword";
 import ShoppingArea from "./Components/UserAccess/ShoppingArea";
 import ShoppingCheckout from "./Components/UserAccess/ShoppingCheckout";
 import NavigationBar from "./Components/UserAccess/NavigationBar";
@@ -55,6 +56,7 @@ function App() {
         <Route path="pages/:page_url" element={<ViewPage />}></Route>
         <Route path="shoppingArea" element={<ShoppingArea />}></Route>
         <Route path="shoppingCheckout" element={<ShoppingCheckout />}></Route>
+        <Route path="/resetPassword" element={<ResetPassword />}></Route>
 
         <Route
           path="/adminDashboard"
