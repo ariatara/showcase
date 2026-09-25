@@ -8,7 +8,7 @@ const ResetPassword = () => {
 	const [accountEmail, setAccountEmail] = useState("");
 	const [resetCode, setResetCode] = useState("");
 	const [accountPassword, setAccountPassword] = useState("");
-	const [step, setStep] = useState("email");
+	const [resetPasswordStep, setResetPasswordStep] = useState("email");
 	const [displayedCode, setDisplayedCode] = useState("");
 	const [error, setError] = useState("");
 	const [message, setMessage] = useState("");
@@ -30,7 +30,7 @@ const ResetPassword = () => {
 				}
 
 				setDisplayedCode(result.data.reset_code);
-				setStep("code");
+				setResetPasswordStep("code");
 			})
 			.catch(() => setError("Unable to request a password reset."))
 			.finally(() => setIsSubmitting(false));
@@ -51,7 +51,7 @@ const ResetPassword = () => {
 					return;
 				}
 
-				setStep("password");
+				setResetPasswordStep("password");
 			})
 			.catch(() => setError("Unable to verify the reset code."))
 			.finally(() => setIsSubmitting(false));
@@ -74,7 +74,7 @@ const ResetPassword = () => {
 				}
 
 				setMessage("Your password has been updated successfully.");
-				setStep("complete");
+				setResetPasswordStep("complete");
 			})
 			.catch(() => setError("Unable to update your password."))
 			.finally(() => setIsSubmitting(false));
@@ -88,7 +88,7 @@ const ResetPassword = () => {
 				className={`${loginStyle.loginForm} p-5 rounded-5 border text-orangered`}
 			>
 				{error && <div className="text-warning mb-3">{error}</div>}
-				{step === "email" && (
+				{resetPasswordStep === "email" && (
 					<>
 						<h3>Reset your password</h3>
 						<p>Enter the email address associated with your account.</p>
@@ -126,7 +126,7 @@ const ResetPassword = () => {
 						</div>
 					</>
 				)}
-				{step === "code" && (
+				{resetPasswordStep === "code" && (
 					<>
 						<h3>Enter reset code</h3>
 						<p>
@@ -154,7 +154,7 @@ const ResetPassword = () => {
 						</form>
 					</>
 				)}
-				{step === "password" && (
+				{resetPasswordStep === "password" && (
 					<>
 						<h3>Choose a new password</h3>
 						<form onSubmit={handlePasswordSubmit}>
@@ -191,25 +191,25 @@ const ResetPassword = () => {
 						</form>
 					</>
 				)}
-				{step === "complete" && (
+				{resetPasswordStep === "complete" && (
 					<div role="status">
 						<h3>Password updated</h3>
 						<p>{message}</p>
 					</div>
 				)}
-				{step !== "email" && step !== "complete" && (
+				{resetPasswordStep !== "email" && resetPasswordStep !== "complete" && (
 					<button
 						type="button"
 						className={`${loginStyle.loginLink} btn btn-link p-0`}
 						onClick={() => {
 							setError("");
-							setStep("email");
+							setResetPasswordStep("email");
 						}}
 					>
 						Use a different email
 					</button>
 				)}
-				{step === "complete" && (
+				{resetPasswordStep === "complete" && (
 					<Link to="/login" className={`${loginStyle.loginButton} mt-3`}>
 						Return to Sign In
 					</Link>
