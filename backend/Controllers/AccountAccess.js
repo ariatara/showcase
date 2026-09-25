@@ -1,4 +1,5 @@
 import DatastoreConnection from "../Utilities/Datastore.js";
+import BCrypt from "bcrypt";
 
 export const ageGroupsAccountAccess = (request, response) => {
   const SQLQuery = "SELECT * FROM age_groups";
@@ -126,27 +127,114 @@ export const logoutAccountAccess = (request, response) => {
 };
 
 export const generatePasswordCode = (request, response) => {
-  // const account_email = request.params.account_email;
-  // const old_account_password = request.params.account_password;
-  var reset_code = Math.floor(100000 + Math.random() * 900000);
+  const accountEmail = request.body.account_email;
+  const resetCode = Math.floor(100000 + Math.random() * 900000);
+  const accountQuery =
+    "SELECT account_email, account_password FROM accounts WHERE account_email = ?";
 
-  const SQLPasswordResetQuery =
-    "INSERT INTO password_reset(account_email, old_account_password, reset_code) VALUES (?)";
-
-  const passwordResetDetails = [request.params.account_email, request.params.account_password, reset_code];
-
-  DatastoreConnection.query(
-    SQLPasswordResetQuery,
-    [passwordResetDetails],
-    (error, result) => {
-      if (error) {
-        console.log("Password reset code assignment failed: " + error);
-
-        return response.json({
-          Status: false,
-          Error: "Password reset code generation failed.",
-        });
-      }
+  DatastoreConnection.query(accountQuery, [accountEmail], (error, result) => {
+    if (error) {
+      console.log("Account lookup for password reset failed: " + error);
+      return response.json({
+        Status: false,
+        Error: "Password reset request failed.",
+      });
     }
-  );
-}
+
+    if (result.length === 0) {
+      return response.json({
+        Status: false,
+        Error: "No account was found with that email address.",
+      });
+    }
+
+    const resetQuery = `
+      INSERT INTO password_reset
+        (account_email, old_account_password, reset_code)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        old_account_password = VALUES(old_account_password),
+        reset_code = VALUES(reset_code),
+        expiry_date = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE)
+    `;
+
+    DatastoreConnection.query(
+      resetQuery,
+      [accountEmail, result[0].account_password, resetCode],
+      (resetError) => {
+        if (resetError) {
+          console.log("Password reset code assignment failed: " + resetError);
+          return response.json({
+            Status: false,
+            Error: "Password reset code generation failed.",
+          });
+        }
+
+        return response.json({ Status: true, reset_code: resetCode });
+      }
+    );
+  });
+};
+
+export const verifyPasswordCode = (request, response) => {
+  const { account_email: accountEmail, reset_code: resetCode } = request.body;
+  const query =
+    "SELECT id FROM password_reset WHERE account_email = ? AND reset_code = ? AND expiry_date > CURRENT_TIMESTAMP";
+
+  DatastoreConnection.query(query, [accountEmail, resetCode], (error, result) => {
+    if (error) {
+      return response.json({ Status: false, Error: "Code verification failed." });
+    }
+
+    return response.json({
+      Status: result.length > 0,
+      Error: result.length > 0 ? undefined : "The reset code is invalid or expired.",
+    });
+  });
+};
+
+export const resetAccountPassword = (request, response) => {
+  const {
+    account_email: accountEmail,
+    reset_code: resetCode,
+    account_password: accountPassword,
+  } = request.body;
+  const query =
+    "SELECT id FROM password_reset WHERE account_email = ? AND reset_code = ? AND expiry_date > CURRENT_TIMESTAMP";
+
+  DatastoreConnection.query(query, [accountEmail, resetCode], (error, result) => {
+    if (error || result.length === 0) {
+      return response.json({
+        Status: false,
+        Error: "The reset code is invalid or expired.",
+      });
+    }
+
+    BCrypt.hash(accountPassword, 10, (hashError, hash) => {
+      if (hashError) {
+        return response.json({ Status: false, Error: "Password update failed." });
+      }
+
+      DatastoreConnection.query(
+        "UPDATE accounts SET account_password = ? WHERE account_email = ?",
+        [hash, accountEmail],
+        (updateError) => {
+          if (updateError) {
+            return response.json({ Status: false, Error: "Password update failed." });
+          }
+
+          DatastoreConnection.query(
+            "DELETE FROM password_reset WHERE account_email = ?",
+            [accountEmail],
+            (deleteError) => {
+              if (deleteError) {
+                return response.json({ Status: false, Error: "Password update failed." });
+              }
+              return response.json({ Status: true });
+            }
+          );
+        }
+      );
+    });
+  });
+};
