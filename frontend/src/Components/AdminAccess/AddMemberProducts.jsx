@@ -42,11 +42,19 @@ const AddMemberProduct = ({ setProductDetails }) => {
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(
+        fieldName,
+        fieldState
+      );
 
-    console.log("Uploaded file:" + uploadedFileName);
+      console.log("Uploaded file:" + uploadedFileName);
 
-    return uploadedFileName;
+      return uploadedFileName;
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
+      return null;
+    }
   };
 
   const productSchema = Yup.object().shape({
@@ -204,10 +212,12 @@ const AddMemberProduct = ({ setProductDetails }) => {
                       "productImage",
                       imageFile[0]
                     );
-                    setValue(
-                      `products.${index}.productImage`,
-                      `${uploadedImageFile}`
-                    );
+                    if (uploadedImageFile) {
+                      setValue(
+                        `products.${index}.productImage`,
+                        uploadedImageFile
+                      );
+                    }
                   }}
                 >
                   Upload

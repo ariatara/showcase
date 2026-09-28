@@ -49,43 +49,60 @@ export const CreateEvent = () => {
   const handleMultipleUploads = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
+    if (!fieldState?.length) {
+      alert("Select at least one file before uploading.");
+      return;
+    }
+
     const targetFileNames = [...new Set(fieldState)];
 
     if (targetFileNames.length > MAX_FILE_COUNT) {
       alert("Maximum of five files can be uploaded.");
+      return;
     }
 
-    const uploadedFileNameCollection = [];
+    try {
+      const uploadedFileNameCollection = [];
 
-    for (let fileIndex in targetFileNames) {
-      const uploadedFileName = await UploadFileByFieldName(
-        fieldName,
-        targetFileNames[fileIndex]
-      );
-      uploadedFileNameCollection.push(uploadedFileName);
+      for (let fileIndex in targetFileNames) {
+        const uploadedFileName = await UploadFileByFieldName(
+          fieldName,
+          targetFileNames[fileIndex]
+        );
+        uploadedFileNameCollection.push(uploadedFileName);
+      }
+
+      uploadedFileNameCollection.forEach((x) => {
+        console.log("Uploaded file:" + x);
+      });
+
+      setEventDetails({
+        ...eventDetails,
+        [fieldName]: uploadedFileNameCollection.join(","),
+      });
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
     }
-
-    uploadedFileNameCollection.forEach((x) => {
-      console.log("Uploaded file:" + x);
-    });
-
-    setEventDetails({
-      ...eventDetails,
-      [fieldName]: uploadedFileNameCollection.join(","),
-    });
   };
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(
+        fieldName,
+        fieldState
+      );
 
-    console.log("Uploaded file:" + uploadedFileName);
+      console.log("Uploaded file:" + uploadedFileName);
 
-    setEventDetails({
-      ...eventDetails,
-      [fieldName]: uploadedFileName,
-    });
+      setEventDetails({
+        ...eventDetails,
+        [fieldName]: uploadedFileName,
+      });
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
+    }
   };
 
   const setUpperHubContent = (value) => {
@@ -270,7 +287,18 @@ export const CreateEvent = () => {
           ></input>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Banner Background Image:</h6>
+          <h6>
+            Banner Background Image:
+            {typeof eventDetails.bannerBackground === "string" &&
+              eventDetails.bannerBackground && (
+                <small
+                  className="ms-2 text-muted fw-normal"
+                  style={{ fontSize: "0.65em" }}
+                >
+                  {eventDetails.bannerBackground.split(",").join(", ")}
+                </small>
+              )}
+          </h6>
           <div className="input-group mb-3">
             <input
               className="form-control form-control-sm"

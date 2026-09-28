@@ -1,8 +1,17 @@
+import FileSystem from "fs";
 import Multer from "multer";
+import Path from "path";
+import { fileURLToPath } from "url";
+
+const UtilitiesDirectory = Path.dirname(fileURLToPath(import.meta.url));
+export const PublicDirectory = Path.resolve(UtilitiesDirectory, "../Public");
+const UploadDirectory = Path.join(PublicDirectory, "Uploads");
+
+FileSystem.mkdirSync(UploadDirectory, { recursive: true });
 
 const fileStore = Multer.diskStorage({
   destination: (request, file, destinationCallback) => {
-    destinationCallback(null, "Public/Uploads");
+    destinationCallback(null, UploadDirectory);
   },
   filename: (request, file, filenameCallback) => {
     filenameCallback(

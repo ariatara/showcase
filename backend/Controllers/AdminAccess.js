@@ -595,7 +595,13 @@ export const deletePageAdminAccess = (request, response) => {
 export const uploadFileAdminAccess = (request, response, next) => {
   const fieldName = request.params.fieldName;
 
-  FileUpload.single(fieldName)(request, response, () => {
+  FileUpload.single(fieldName)(request, response, (error) => {
+    if (error) {
+      console.log("File upload failed: " + error);
+
+      return response.status(500).json({ Error: "File upload failed." });
+    }
+
     if (request.file == null) {
       return response.status(400).json({ Error: "File name not found." });
     }
