@@ -11,6 +11,17 @@ import { ServerLocation } from "../../Utilities/Locations";
 
 const MAX_FILE_COUNT = 5;
 
+const renderUploadedFileNames = (fileNames) =>
+  typeof fileNames === "string" &&
+  fileNames && (
+    <small
+      className="ms-2 text-muted fw-normal"
+      style={{ fontSize: "0.65em" }}
+    >
+      {fileNames.split(",").join(", ")}
+    </small>
+  );
+
 export const CreateEvent = () => {
   const NavigateTo = useNavigate();
 
@@ -289,15 +300,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Banner Background Image:
-            {typeof eventDetails.bannerBackground === "string" &&
-              eventDetails.bannerBackground && (
-                <small
-                  className="ms-2 text-muted fw-normal"
-                  style={{ fontSize: "0.65em" }}
-                >
-                  {eventDetails.bannerBackground.split(",").join(", ")}
-                </small>
-              )}
+            {renderUploadedFileNames(eventDetails.bannerBackground)}
           </h6>
           <div className="input-group mb-3">
             <input
@@ -340,7 +343,10 @@ export const CreateEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Background Image:</h6>
+          <h6>
+            Upper Hub Background Image:
+            {renderUploadedFileNames(eventDetails.upperHubBackground)}
+          </h6>
           <div className="input-group mb-3">
             <input
               className="form-control form-control-sm"
@@ -371,7 +377,10 @@ export const CreateEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Event Images:</h6>
+          <h6>
+            Upper Hub Event Images:
+            {renderUploadedFileNames(eventDetails.upperHubEventImages)}
+          </h6>
           <div className="input-group mb-3">
             <input
               className="form-control form-control-sm"
@@ -417,7 +426,10 @@ export const CreateEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Background Image:</h6>
+          <h6>
+            Lower Hub Background Image:
+            {renderUploadedFileNames(eventDetails.lowerHubBackground)}
+          </h6>
           <div className="input-group mb-3">
             <input
               className="form-control form-control-sm"
@@ -448,7 +460,10 @@ export const CreateEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Event Images:</h6>
+          <h6>
+            Lower Hub Event Images:
+            {renderUploadedFileNames(eventDetails.lowerHubEventImages)}
+          </h6>
           <div className="input-group mb-3">
             <input
               className="form-control form-control-sm"
