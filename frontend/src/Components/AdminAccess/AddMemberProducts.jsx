@@ -80,22 +80,9 @@ const AddMemberProduct = ({ setProductDetails }) => {
     ),
   });
 
-  const products = [
-    {
-      productName: "",
-      productType: "",
-      productImage: "",
-      productTarget: "",
-      productPrice: "",
-      productInventory: "",
-      eventDate: "",
-    },
-  ];
-
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
     control,
@@ -104,11 +91,11 @@ const AddMemberProduct = ({ setProductDetails }) => {
   } = useForm({
     resolver: yupResolver(productSchema),
     defaultValues: {
-      productSchema: products,
+      products: [],
     },
   });
 
-  const { fields, append, prepend, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "products",
     control,
     rules: { required: "Add at least one product" },
@@ -118,14 +105,15 @@ const AddMemberProduct = ({ setProductDetails }) => {
     setProductDetails(formValues.products);
   };
 
+  useEffect(() => {
+    const subscription = watch((values) => setProductDetails(values.products ?? []));
+    return () => subscription.unsubscribe();
+  }, [watch, setProductDetails]);
+
   return (
     <form
       className="row gy-2 gx-2 justify-content-evenly"
       onSubmit={handleSubmit(onSubmit)}
-      onChange={() => {
-        const formValues = getValues();
-        setProductDetails(formValues.products);
-      }}
     >
       <h6>Member Products:</h6>
       {fields.map((item, index) => {

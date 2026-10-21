@@ -31,8 +31,8 @@ The project is a three-tier membership and event-management application:
 | Persistence | MySQL/InnoDB schema and seed data | `datastore/Schema/BackendSchema.mysql.sql` | Local MySQL |
 | Deployment | Azure Static Web Apps workflow for the frontend | `.github/workflows/azure-static-web-apps-ashy-meadow-03076d30f.yml` | Push or PR against `main` |
 
-There is no root package manifest, workspace manager, container definition, test
-suite, migration runner, or pinned Node.js version. The frontend and backend are
+There is no workspace manager, container definition, migration runner, or pinned
+Node.js version. Focused event tests use Node's built-in test runner. The frontend and backend are
 installed and run as independent npm projects. Package lock files are currently
 ignored.
 
@@ -146,6 +146,40 @@ The SQL file is an idempotent bootstrap script only in part: tables and seed row
 use `IF NOT EXISTS` or `INSERT IGNORE`, but unconditional `ALTER TABLE` statements
 can fail when the script is rerun against an already initialized database. Treat
 it as an initial schema, not a migration system.
+
+#### Event drafts and publishing
+
+Events require MySQL **8.0.16 or later**, where CHECK constraints are enforced.
+Apply `datastore\Migrations\001_events_partial_save.mysql.sql` to existing databases
+before deploying the draft-save code; new databases use the bootstrap schema.
+The migration backfills NULL visibility to false and refuses incomplete published
+rows through its CHECK constraint. Inspect the preflight query, back up the table,
+and resolve those rows first. DDL implicitly commits; rollback instructions are
+included in the migration and require preserving drafts and completing missing
+required fields before restoring NOT NULL.
+
+The Visibility radio and Save button remain unchanged in concept. Unpublish +
+Save creates or updates a private draft with just a Page Title and its derived URL.
+Both remain unique for drafts and published events. Publish + Save requires the
+event title, start/end dates and times, venue, and uploaded banner filename.
+Other fields remain optional. Backend validation enforces column sizes and valid
+supplied dates/times on both paths, with a database CHECK as the publish backstop.
+Omitted update fields retain their values; explicit null/empty fields clear them.
+Creation timestamps are preserved on update; write timestamps are server-generated.
+
+`GET /auth/events/url/:event_url` uses administrator authentication/authorization
+and includes drafts for editing. Public event reads return 404 for drafts and
+missing events; account event reads also filter out drafts. The admin list shows
+Draft/Published, hides draft View links, and copies events as drafts.
+
+Event writes return `{ Status, Result: { id, url } }`; validation errors include
+`Error`, `FieldErrors`, and `MissingFields`. Duplicate titles/URLs return 409.
+Products save only after the event succeeds. An incomplete product batch is
+skipped in its entirety with a visible warning, retaining the form and saved event
+ID for retry. Existing products are not partially overwritten. Replacing products
+is transactional on a dedicated connection; an explicit empty list removes them.
+Pending file selections are not persisted until uploaded; saved filenames are
+kept separately so selecting a replacement does not erase an existing upload.
 
 ### 3.5 Code flow diagrams
 
@@ -282,7 +316,7 @@ showcase/
 - Git
 - Node.js and npm. The repository does not pin a version; use a supported Node.js
   LTS release and record the version in bug reports.
-- MySQL 8.x. The schema uses MySQL-specific syntax and the
+- MySQL 8.0.16 or later (enforced CHECK constraints). The schema uses MySQL-specific syntax and the
   `utf8mb4_0900_ai_ci` collation.
 - A MySQL client capable of running the schema script.
 - Two terminals, plus access to MySQL.
@@ -454,12 +488,17 @@ and prefer immutable React state updates. Do not reformat unrelated files.
 |---|---|---|
 | Frontend lint | `npm run lint` | ESLint rules for JS/JSX and React hooks |
 | Frontend build | `npm run build` | Vite production bundle |
-| Backend tests | `npm test` | Placeholder that intentionally exits with failure |
+| Backend tests | `npm test` in `backend` | Node test runner: event validation, handlers, product transactions |
+| Frontend tests | `npm test` in `frontend` | Node test runner: payloads, draft loading, save sequencing |
 | Backend lint/build | None | No configured command |
-| Database validation | None | Manual schema and smoke testing |
+| Database validation | `npm run test:integration` in `backend` | Opt-in MySQL bootstrap/upgrade and HTTP lifecycle checks |
 
 For every pull request, list the commands and manual paths actually exercised.
-Do not claim backend automated test coverage until a test runner and tests exist.
+For database checks, set `EVENT_TEST_MYSQL=1` and `MYSQL_TEST_PASSWORD`, optionally
+`MYSQL_TEST_HOST`, `MYSQL_TEST_PORT`, and `MYSQL_TEST_USER`. The test login needs
+CREATE/DROP DATABASE permissions. Tests create uniquely named
+`showcase_event_test_*` databases and remove only those databases; they do not
+apply the migration to the application's database. Without opt-in, they are skipped.
 
 ### 9.2 Minimum review evidence
 
@@ -481,7 +520,7 @@ new contributor should fix opportunistically:
 | Secrets and database configuration | Runtime credentials and signing configuration are source-based | Never commit real secrets; prefer an explicit environment configuration change |
 | Database naming | README says `showcase`; schema and code use `uttoron` | Use `uttoron` until configuration is centralized |
 | Dependency reproducibility | Both projects ignore package lock files | Record versions when diagnosing install regressions |
-| Backend quality gates | No backend tests, lint, or build script | Use focused manual API checks and keep changes small |
+| Backend quality gates | Focused event tests; no lint or build script | Run the event tests and use focused API checks for other areas |
 | Frontend API configuration | Most calls hard-code localhost; some use `ServerLocation()` | Route new calls through the utility |
 | Frontend route guards | Guards assume `loginSession` exists and parse it directly | Exercise direct navigation with an empty and expired session |
 | Account/member deletion | Frontend invokes delete endpoints not declared by the backend router | Do not treat those buttons as supported until both sides are implemented |
@@ -503,7 +542,7 @@ slice. Good candidates include:
 - Consolidating a small set of related Axios calls behind `ServerLocation()`.
 - Adding a missing frontend empty, loading, or error state.
 - Correcting one frontend/backend route mismatch with manual contract checks.
-- Adding focused backend tests while introducing a test runner in a dedicated
+- Adding focused backend tests using the existing Node test runner in a dedicated
   tooling change.
 - Documenting and implementing an environment variable for one runtime setting
   without exposing its value.

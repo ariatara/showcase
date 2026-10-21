@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import htmlReactParser from "html-react-parser";
 import Axios from "axios";
 import viewEventStyle from "../../../css/ViewEvent.module.css";
 import { DateInWords, TimeInWords } from "../../Utilities/Formats";
 import { ServerLocation } from "../../Utilities/Locations";
+import { eventFromRow } from "../../Utilities/EventValidation";
 
 const ViewEvent = () => {
-  const NavigateTo = useNavigate();
-
   const { event_url } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [eventDetails, setEventDetails] = useState({
     pageTitle: "",
@@ -36,43 +37,32 @@ const ViewEvent = () => {
   });
 
   useEffect(() => {
-    Axios.get(ServerLocation("/user/events/" + event_url))
+    let active = true;
+    setLoading(true);
+    setLoadError("");
+    Axios.get(ServerLocation("/user/events/" + encodeURIComponent(event_url)))
       .then((response) => {
-        if (response.data.Status) {
-          setEventDetails({
-            pageTitle: response.data.Result[0].page_title,
-            eventURL: response.data.Result[0].url,
-            eventTitle: response.data.Result[0].event_title,
-            startDate: response.data.Result[0].start_date,
-            startTime: response.data.Result[0].start_time,
-            endDate: response.data.Result[0].end_date,
-            endTime: response.data.Result[0].end_time,
-            venueAddress: response.data.Result[0].venue_address,
-            mapLink: response.data.Result[0].map_link,
-            bannerBackground:
-              response.data.Result[0].banner_background_image_name,
-            upperHubContent: response.data.Result[0].upper_hub_content,
-            upperHubBackground:
-              response.data.Result[0].upper_hub_background_image_name,
-            upperHubEventImages:
-              response.data.Result[0].upper_hub_event_image_names.split(","),
-            lowerHubContent: response.data.Result[0].lower_hub_content,
-            lowerHubBackground:
-              response.data.Result[0].lower_hub_background_image_name,
-            lowerHubEventImages:
-              response.data.Result[0].lower_hub_event_image_names.split(","),
-            isPublished: response.data.Result[0].published,
-            createdBy: response.data.Result[0].created_by,
-            createdDateTime: response.data.Result[0].created_date,
-            modifiedBy: response.data.Result[0].modified_by,
-            modifiedDateTime: response.data.Result[0].modified_date,
-          });
-        } else {
-          alert(response.data.Error);
+        if (!response.data.Status || !response.data.Result?.length) {
+          throw new Error(response.data.Error || "Event not found.");
         }
+        const details = eventFromRow(response.data.Result[0]);
+        if (active) setEventDetails({
+          ...details,
+          startDate: response.data.Result[0].start_date,
+          endDate: response.data.Result[0].end_date,
+          upperHubEventImages: details.upperHubEventImages.split(",").filter(Boolean),
+          lowerHubEventImages: details.lowerHubEventImages.split(",").filter(Boolean),
+        });
       })
-      .catch((error) => console.log(error));
-  }, []);
+      .catch((error) => {
+        if (active) setLoadError(error.response?.data?.Error || error.message);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [event_url]);
+
+  if (loading) return <p>Loading event...</p>;
+  if (loadError) return <p role="alert">{loadError}</p>;
 
   return (
     <div>

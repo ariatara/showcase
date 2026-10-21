@@ -109,7 +109,7 @@ export const registerMemberAccountAccess = (request, response) => {
 export const getEventAccountAccess = (request, response) => {
   const id = request.params.id;
 
-  const SQLQuery = "SELECT * FROM events WHERE id = ?";
+  const SQLQuery = "SELECT * FROM events WHERE id = ? AND published = TRUE";
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)
       return response.json({

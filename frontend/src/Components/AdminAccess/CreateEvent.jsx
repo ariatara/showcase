@@ -1,5 +1,4 @@
-import Axios from "axios";
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +6,7 @@ import Moment from "moment";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import AddMemberProduct from "./AddMemberProducts";
 import { UploadFileByFieldName } from "../../Utilities/Uploads";
-import { ServerLocation } from "../../Utilities/Locations";
+import { saveEvent } from "../../Utilities/SaveEvent";
 
 const MAX_FILE_COUNT = 5;
 
@@ -24,6 +23,10 @@ const renderUploadedFileNames = (fileNames) =>
 
 export const CreateEvent = () => {
   const NavigateTo = useNavigate();
+  const [savedId, setSavedId] = useState();
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(0);
+  const [pendingUploads, setPendingUploads] = useState({});
 
   const [eventDetails, setEventDetails] = useState({
     pageTitle: "",
@@ -49,13 +52,7 @@ export const CreateEvent = () => {
     modifiedDateTime: Moment().format("YYYY-MM-DD HH:mm:ss"),
   });
 
-  const getEventURL = useCallback(() => {
-    return eventDetails.pageTitle.replace(/ /g, "_").toLocaleLowerCase();
-  }, [eventDetails.pageTitle]);
-
-  useEffect(() => {
-    eventDetails.eventURL = getEventURL();
-  }, [eventDetails, eventDetails.pageTitle, getEventURL]);
+  const getEventURL = () => eventDetails.pageTitle.trim().replace(/ /g, "_").toLocaleLowerCase();
 
   const handleMultipleUploads = async (event, fieldName, fieldState) => {
     event.preventDefault();
@@ -72,6 +69,7 @@ export const CreateEvent = () => {
       return;
     }
 
+    setUploading((count) => count + 1);
     try {
       const uploadedFileNameCollection = [];
 
@@ -87,18 +85,22 @@ export const CreateEvent = () => {
         console.log("Uploaded file:" + x);
       });
 
-      setEventDetails({
-        ...eventDetails,
+      setEventDetails((current) => ({
+        ...current,
         [fieldName]: uploadedFileNameCollection.join(","),
-      });
+      }));
+      setPendingUploads((current) => ({ ...current, [fieldName]: null }));
     } catch (error) {
       alert(error.response?.data?.Error || error.message);
+    } finally {
+      setUploading((count) => count - 1);
     }
   };
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
+    setUploading((count) => count + 1);
     try {
       const uploadedFileName = await UploadFileByFieldName(
         fieldName,
@@ -107,12 +109,15 @@ export const CreateEvent = () => {
 
       console.log("Uploaded file:" + uploadedFileName);
 
-      setEventDetails({
-        ...eventDetails,
+      setEventDetails((current) => ({
+        ...current,
         [fieldName]: uploadedFileName,
-      });
+      }));
+      setPendingUploads((current) => ({ ...current, [fieldName]: null }));
     } catch (error) {
       alert(error.response?.data?.Error || error.message);
+    } finally {
+      setUploading((count) => count - 1);
     }
   };
 
@@ -130,36 +135,30 @@ export const CreateEvent = () => {
     });
   };
 
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     event.preventDefault();
-
-    Axios.post(ServerLocation("/auth/events"), eventDetails)
-      .then((result) => {
-        if (result.data.Status) {
-          NavigateTo("/adminDashboard/events");
-        } else {
-          alert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-
-    Axios.post(ServerLocation("/auth/memberProducts"), productDetails)
-      .then((result) => {
-        if (result.data.Status) {
-          console.log("Product details updated successfully");
-        } else {
-          alert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-
-    //window.location.reload();
+    if (saving || uploading) return;
+    setSaving(true);
+    try {
+      const result = await saveEvent({ details: eventDetails, products: productDetails, id: savedId });
+      setSavedId(result.id);
+      const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
+      if (result.warning || pending) {
+        alert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
+      } else {
+        NavigateTo("/adminDashboard/events");
+      }
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const [productDetails, setProductDetails] = useState([]);
 
   return (
-    <div className={eventStyle.createEvent}>
+    <fieldset className={eventStyle.createEvent} disabled={saving || uploading > 0}>
       <div className={eventStyle.eventContent}>
         <h4>Create Event:</h4>
         <div className="input-group mb-3">
@@ -309,8 +308,8 @@ export const CreateEvent = () => {
               id="bannerBackground"
               name="bannerBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   bannerBackground: event.target.files[0],
                 })
               }
@@ -323,7 +322,7 @@ export const CreateEvent = () => {
                 handleUpload(
                   event,
                   "bannerBackground",
-                  eventDetails.bannerBackground
+                  pendingUploads.bannerBackground
                 )
               }
             >
@@ -337,6 +336,7 @@ export const CreateEvent = () => {
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              readOnly={saving || uploading > 0}
               value={eventDetails.upperHubContent}
               onChange={setUpperHubContent}
             />
@@ -354,8 +354,8 @@ export const CreateEvent = () => {
               id="upperHubBackground"
               name="upperHubBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   upperHubBackground: event.target.files[0],
                 })
               }
@@ -368,7 +368,7 @@ export const CreateEvent = () => {
                 handleUpload(
                   event,
                   "upperHubBackground",
-                  eventDetails.upperHubBackground
+                  pendingUploads.upperHubBackground
                 )
               }
             >
@@ -392,8 +392,8 @@ export const CreateEvent = () => {
                 const selectedFiles = Array.prototype.slice.call(
                   event.target.files
                 );
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   upperHubEventImages: selectedFiles,
                 });
               }}
@@ -406,7 +406,7 @@ export const CreateEvent = () => {
                 handleMultipleUploads(
                   event,
                   "upperHubEventImages",
-                  eventDetails.upperHubEventImages
+                  pendingUploads.upperHubEventImages
                 )
               }
             >
@@ -420,6 +420,7 @@ export const CreateEvent = () => {
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              readOnly={saving || uploading > 0}
               value={eventDetails.lowerHubContent}
               onChange={setLowerHubContent}
             />
@@ -437,8 +438,8 @@ export const CreateEvent = () => {
               id="lowerHubBackground"
               name="lowerHubBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   lowerHubBackground: event.target.files[0],
                 })
               }
@@ -451,7 +452,7 @@ export const CreateEvent = () => {
                 handleUpload(
                   event,
                   "lowerHubBackground",
-                  eventDetails.lowerHubBackground
+                  pendingUploads.lowerHubBackground
                 )
               }
             >
@@ -475,8 +476,8 @@ export const CreateEvent = () => {
                 const selectedFiles = Array.prototype.slice.call(
                   event.target.files
                 );
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   lowerHubEventImages: selectedFiles,
                 });
               }}
@@ -489,7 +490,7 @@ export const CreateEvent = () => {
                 handleMultipleUploads(
                   event,
                   "lowerHubEventImages",
-                  eventDetails.lowerHubEventImages
+                  pendingUploads.lowerHubEventImages
                 )
               }
             >
@@ -528,8 +529,8 @@ export const CreateEvent = () => {
               type="radio"
               name="visibilityOptions"
               id="unpublish"
-              defaultChecked
-              onChange={() => (eventDetails.isPublished = false)}
+              checked={!eventDetails.isPublished}
+              onChange={() => setEventDetails({ ...eventDetails, isPublished: false })}
             ></input>
             <label className="form-check-label" htmlFor="unpublish">
               Unpublish
@@ -541,7 +542,8 @@ export const CreateEvent = () => {
               type="radio"
               name="visibilityOptions"
               id="publish"
-              onChange={() => (eventDetails.isPublished = true)}
+              checked={eventDetails.isPublished}
+              onChange={() => setEventDetails({ ...eventDetails, isPublished: true })}
             ></input>
             <label className="form-check-label" htmlFor="publish">
               Publish
@@ -564,10 +566,10 @@ export const CreateEvent = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleSave}
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
-    </div>
+    </fieldset>
   );
 };

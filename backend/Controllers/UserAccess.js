@@ -2,6 +2,7 @@ import JWToken from "jsonwebtoken";
 import BCrypt from "bcrypt";
 import { SECRETS } from "../Configurations/Secrets.js";
 import DatastoreConnection from "../Utilities/Datastore.js";
+import { createEventHandlers } from "./EventAccess.js";
 
 export const createAccountUserAccess = (request, response) => {
   const SQLQuery =
@@ -175,20 +176,7 @@ export const loginUserAccess = (request, response) => {
   );
 };
 
-export const viewEventUserAccess = (request, response) => {
-  const url = request.params.event_url;
-
-  const SQLQuery = "SELECT * FROM events WHERE url = ?";
-
-  DatastoreConnection.query(SQLQuery, [url], (error, result) => {
-    if (error)
-      return response.json({
-        Status: false,
-        Error: "Get event failed.",
-      });
-    return response.json({ Status: true, Result: result });
-  });
-};
+export const { viewEventUserAccess } = createEventHandlers(DatastoreConnection);
 
 export const viewPageUserAccess = (request, response) => {
   const url = request.params.page_url;
