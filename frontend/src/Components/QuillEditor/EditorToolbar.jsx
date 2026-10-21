@@ -1,5 +1,6 @@
 import { Quill } from "react-quill";
 import QuillResizeImage from "quill-resize-image";
+import { EditorFontOptions } from "./EditorFonts";
 
 // Custom Undo button icon component for Quill editor. You can import it directly
 // from 'quill/assets/icons/undo.svg' but I found that a number of loaders do not
@@ -38,29 +39,14 @@ Size.whitelist = [
 ];
 Quill.register(Size, true);
 
-// Add fonts to whitelist and register them
-const Font = Quill.import("formats/font");
-Font.whitelist = [
-  "arial",
-  "gill-sans",
-  "courier-new",
-  "georgia",
-  "verdana",
-  "lucida",
-];
-Quill.register(Font, true);
-
 // Quill Toolbar component
 export const QuillToolbar = () => (
   <div id="toolbar">
     <span className="ql-formats">
       <select className="ql-font" defaultValue="arial">
-        <option value="arial">Arial</option>
-        <option value="gill-sans">Gill Sans</option>
-        <option value="courier-new">Courier New</option>
-        <option value="georgia">Georgia</option>
-        <option value="verdana">Verdana</option>
-        <option value="lucida">Lucida</option>
+        {EditorFontOptions.map(({ value, label }) => (
+          <option key={value} value={value}>{label}</option>
+        ))}
       </select>
       <select className="ql-size" defaultValue="medium">
         <option value="small">S</option>

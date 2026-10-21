@@ -7,19 +7,9 @@ import eventStyle from "../../../css/CreateEvent.module.css";
 import AddMemberProduct from "./AddMemberProducts";
 import { UploadFileByFieldName } from "../../Utilities/Uploads";
 import { saveEvent } from "../../Utilities/SaveEvent";
+import UploadedFileNames from "./UploadedFileNames";
 
 const MAX_FILE_COUNT = 5;
-
-const renderUploadedFileNames = (fileNames) =>
-  typeof fileNames === "string" &&
-  fileNames && (
-    <small
-      className="ms-2 text-muted fw-normal"
-      style={{ fontSize: "0.65em" }}
-    >
-      {fileNames.split(",").join(", ")}
-    </small>
-  );
 
 export const CreateEvent = () => {
   const NavigateTo = useNavigate();
@@ -299,7 +289,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Banner Background Image:
-            {renderUploadedFileNames(eventDetails.bannerBackground)}
+            <UploadedFileNames fileNames={eventDetails.bannerBackground} />
           </h6>
           <div className="input-group mb-3">
             <input
@@ -345,7 +335,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Upper Hub Background Image:
-            {renderUploadedFileNames(eventDetails.upperHubBackground)}
+            <UploadedFileNames fileNames={eventDetails.upperHubBackground} />
           </h6>
           <div className="input-group mb-3">
             <input
@@ -379,7 +369,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Upper Hub Event Images:
-            {renderUploadedFileNames(eventDetails.upperHubEventImages)}
+            <UploadedFileNames fileNames={eventDetails.upperHubEventImages} />
           </h6>
           <div className="input-group mb-3">
             <input
@@ -429,7 +419,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Lower Hub Background Image:
-            {renderUploadedFileNames(eventDetails.lowerHubBackground)}
+            <UploadedFileNames fileNames={eventDetails.lowerHubBackground} />
           </h6>
           <div className="input-group mb-3">
             <input
@@ -463,7 +453,7 @@ export const CreateEvent = () => {
         <div className={eventStyle.imageUploadContainer}>
           <h6>
             Lower Hub Event Images:
-            {renderUploadedFileNames(eventDetails.lowerHubEventImages)}
+            <UploadedFileNames fileNames={eventDetails.lowerHubEventImages} />
           </h6>
           <div className="input-group mb-3">
             <input

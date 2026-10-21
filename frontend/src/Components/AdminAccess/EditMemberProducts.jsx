@@ -10,7 +10,7 @@ import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
 
-const EditMemberProduct = ({ eventURL, setProductDetails }) => {
+const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => {
   const [productTypes, setProductTypes] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -43,6 +43,11 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
+
+    if (!(fieldState instanceof File)) {
+      onMissingUpload();
+      return null;
+    }
 
     try {
       const uploadedFileName = await UploadFileByFieldName(
@@ -236,7 +241,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
                     const uploadedImageFile = await handleUpload(
                       event,
                       "productImage",
-                      imageFile[0]
+                      imageFile?.[0]
                     );
                     if (uploadedImageFile) {
                       setValue(
@@ -373,6 +378,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
 EditMemberProduct.propTypes = {
   eventURL: PropTypes.string.isRequired,
   setProductDetails: PropTypes.func.isRequired,
+  onMissingUpload: PropTypes.func.isRequired,
 };
 
 export default EditMemberProduct;

@@ -1,6 +1,7 @@
 import Compressor from "compressorjs";
 import Axios from "axios";
 import { ServerLocation } from "../../Utilities/Locations";
+import { matchEditorFont } from "./EditorFonts";
 
 function undoChange() {
   this.quill.history.undo();
@@ -27,7 +28,7 @@ const uploadFile = async (fieldName, eventFileName) => {
 };
 
 function compressFile(inputFile) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     new Compressor(inputFile, {
       file: "File",
       quality: 1.0,
@@ -81,6 +82,7 @@ export const EditorModules = {
   },
   clipboard: {
     matchVisual: false,
+    matchers: [['[class*="ql-font-"]', matchEditorFont]],
   },
   resize: {
     locale: {

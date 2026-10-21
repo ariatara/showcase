@@ -6,6 +6,7 @@ import viewEventStyle from "../../../css/ViewEvent.module.css";
 import { DateInWords, TimeInWords } from "../../Utilities/Formats";
 import { ServerLocation } from "../../Utilities/Locations";
 import { eventFromRow } from "../../Utilities/EventValidation";
+import "../../../css/EditorFonts.css";
 
 const ViewEvent = () => {
   const { event_url } = useParams();

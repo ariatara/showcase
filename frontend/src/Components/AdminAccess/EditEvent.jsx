@@ -1,17 +1,33 @@
 import Axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useNavigate, useParams } from "react-router-dom";
 import eventStyle from "../../../css/CreateEvent.module.css";
+import loginStyle from "../../../css/Login.module.css";
 import { ServerLocation } from "../../Utilities/Locations";
-import { OriginalFilesInList } from "../../Utilities/Formats";
 import EditMemberProducts from "./EditMemberProducts";
+import UploadedFileNames from "./UploadedFileNames";
 import { eventFromRow } from "../../Utilities/EventValidation";
 import { saveEvent } from "../../Utilities/SaveEvent";
 import { UploadFileByFieldName } from "../../Utilities/Uploads";
+import { EditorFontOptions, matchEditorFont } from "../QuillEditor/EditorFonts";
 
 const MAX_FILE_COUNT = 5;
+
+const eventEditorModules = {
+  clipboard: {
+    matchers: [['[class*="ql-font-"]', matchEditorFont]],
+  },
+  toolbar: [
+    [{ header: ["1", "2", "3", false] }],
+    [{ font: [false, ...EditorFontOptions.map(({ value }) => value)] }],
+    ["bold", "italic", "underline", "link"],
+    [{ color: [] }],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
 
 export const EditEvent = () => {
   const NavigateTo = useNavigate();
@@ -22,6 +38,7 @@ export const EditEvent = () => {
   const [loadError, setLoadError] = useState("");
   const [uploading, setUploading] = useState(0);
   const [pendingUploads, setPendingUploads] = useState({});
+  const uploadWarningRef = useRef(null);
 
   const [eventDetails, setEventDetails] = useState({
     eventId: "",
@@ -68,11 +85,13 @@ export const EditEvent = () => {
 
   const getEventURL = () => eventDetails.pageTitle.trim().replace(/ /g, "_").toLocaleLowerCase();
 
+  const showUploadWarning = () => uploadWarningRef.current.showModal();
+
   const handleMultipleUploads = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
     if (!fieldState?.length) {
-      alert("Select at least one file before uploading.");
+      showUploadWarning();
       return;
     }
     const targetFileNames = [...new Set(fieldState)];
@@ -97,6 +116,11 @@ export const EditEvent = () => {
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
+
+    if (!(fieldState instanceof File)) {
+      showUploadWarning();
+      return;
+    }
 
     setUploading((count) => count + 1);
     try {
@@ -296,7 +320,10 @@ export const EditEvent = () => {
           ></input>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Banner Background Image:</h6>
+          <h6>
+            Banner Background Image:
+            <UploadedFileNames fileNames={eventDetails.bannerBackground} />
+          </h6>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -325,9 +352,6 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image: {OriginalFilesInList(eventDetails.bannerBackground)}
-          </div>
         </div>
         <div className={eventStyle.textInputContainer}>
           <h6>Upper Hub Content:</h6>
@@ -335,6 +359,7 @@ export const EditEvent = () => {
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              modules={eventEditorModules}
               readOnly={saving || uploading > 0}
               value={eventDetails.upperHubContent}
               onChange={setUpperHubContent}
@@ -342,7 +367,10 @@ export const EditEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Background Image:</h6>
+          <h6>
+            Upper Hub Background Image:
+            <UploadedFileNames fileNames={eventDetails.upperHubBackground} />
+          </h6>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -371,13 +399,12 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image:{" "}
-            {OriginalFilesInList(eventDetails.upperHubBackground)}
-          </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Event Images:</h6>
+          <h6>
+            Upper Hub Event Images:
+            <UploadedFileNames fileNames={eventDetails.upperHubEventImages} />
+          </h6>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -410,10 +437,6 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image(s):{" "}
-            {OriginalFilesInList(eventDetails.upperHubEventImages)}
-          </div>
         </div>
         <div className={eventStyle.textInputContainer}>
           <h6>Lower Hub Content:</h6>
@@ -421,6 +444,7 @@ export const EditEvent = () => {
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              modules={eventEditorModules}
               readOnly={saving || uploading > 0}
               value={eventDetails.lowerHubContent}
               onChange={setLowerHubContent}
@@ -428,7 +452,10 @@ export const EditEvent = () => {
           </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Background Image:</h6>
+          <h6>
+            Lower Hub Background Image:
+            <UploadedFileNames fileNames={eventDetails.lowerHubBackground} />
+          </h6>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -457,13 +484,12 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image:{" "}
-            {OriginalFilesInList(eventDetails.lowerHubBackground)}
-          </div>
         </div>
         <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Event Images:</h6>
+          <h6>
+            Lower Hub Event Images:
+            <UploadedFileNames fileNames={eventDetails.lowerHubEventImages} />
+          </h6>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -496,15 +522,12 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image(s):{" "}
-            {OriginalFilesInList(eventDetails.lowerHubEventImages)}
-          </div>
         </div>
         <section className={eventStyle.textInputContainer}>
           <EditMemberProducts
             eventURL={event_url}
             setProductDetails={setProductDetails}
+            onMissingUpload={showUploadWarning}
           ></EditMemberProducts>
         </section>
       </div>
@@ -574,6 +597,23 @@ export const EditEvent = () => {
           </button>
         </div>
       </div>
+      <dialog
+        ref={uploadWarningRef}
+        className={`${loginStyle.loginNotification} p-4 rounded-5 border text-center`}
+        role="alertdialog"
+        aria-labelledby="upload-warning-title"
+        aria-describedby="upload-warning-message"
+      >
+        <h2 id="upload-warning-title" className="h5 text-orangered">
+          Upload
+        </h2>
+        <p id="upload-warning-message">Select a file before uploading.</p>
+        <form method="dialog" className="mt-4">
+          <button type="submit" className={loginStyle.loginButton} autoFocus>
+            OK
+          </button>
+        </form>
+      </dialog>
     </fieldset>
   );
 };
