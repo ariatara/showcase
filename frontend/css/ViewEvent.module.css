@@ -93,13 +93,17 @@
   margin: auto;
 }
 
-.eventUpperContent {
+.eventUpperContent,
+.eventLowerContent {
   display: flex;
   flex-direction: column;
+  align-self: stretch;
   justify-content: space-around;
   text-align: center;
-  width: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
   height: auto;
+  margin: 25px;
   padding: 25px;
   font-size: 1.25rem;
 }
@@ -123,14 +127,7 @@
 }
 
 .eventLowerContent {
-  display: flex;
-  flex-direction: column;
   justify-content: center;
-  text-align: center;
-  width: 100%;
-  height: auto;
-  padding: 25px;
-  font-size: 1.25rem;
 }
 
 @media (max-width: 768px) {
@@ -143,6 +140,10 @@
   .eventUpperContainer,
   .eventLowerContainer {
     padding-bottom: 15px;
+  }
+  .eventUpperContent,
+  .eventLowerContent {
+    margin: 15px;
   }
   .eventBannerContent,
   .eventUpperContent,
