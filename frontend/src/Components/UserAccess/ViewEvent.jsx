@@ -67,7 +67,7 @@ const ViewEvent = () => {
 
   return (
     <div>
-      <section className={viewEventStyle.eventBanner}>
+      <section className={`${viewEventStyle.eventBanner} container-fluid`}>
         <div
           className={`${viewEventStyle.eventBannerContainer} shadow-lg bg-body rounded-5`}
           style={{
@@ -100,7 +100,7 @@ const ViewEvent = () => {
         </div>
       </section>
 
-      <div className={viewEventStyle.eventUpperSection}>
+      <div className={`${viewEventStyle.eventUpperSection} container-fluid`}>
         <div
           className={`${viewEventStyle.eventUpperContainer} border border-5 shadow-lg rounded-5`}
           style={{
@@ -115,24 +115,27 @@ const ViewEvent = () => {
           >
             <p>{htmlReactParser(eventDetails.upperHubContent)}</p>
           </div>
-        </div>
-      </div>
-
-      <div className="container-fluid">
-        <div className="row g-0">
-          {eventDetails.upperHubEventImages.map((image, index) => (
-            <div key={index}>
-              <div className="col-md-auto">
-                {" "}
-                <div
-                  className="card shadow-lg"
-                  style={{ width: "32%", margin: "auto" }}
-                >
-                  <img src={`${ServerLocation("/Uploads/" + image)}`} />
+          <div className="container-fluid">
+            <div className="row g-0">
+              {eventDetails.upperHubEventImages.map((image, index) => (
+                <div key={index}>
+                  <div className="col-md-auto">
+                    {" "}
+                    <div
+                      className="card shadow-lg bg-transparent"
+                      style={{ width: "fit-content", maxWidth: "100%", margin: "auto" }}
+                    >
+                      <img
+                        className="img-fluid"
+                        style={{ opacity: 0.9 }}
+                        src={`${ServerLocation("/Uploads/" + image)}`}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
@@ -146,53 +149,18 @@ const ViewEvent = () => {
           }}
         >
           <div
-            className={`${viewEventStyle.eventLowerContent} mt-5 rounded-5 fs-6 fw-semibold`}
+            className={`${viewEventStyle.eventLowerContent} rounded-5 fs-6 fw-semibold`}
           >
             <p>{htmlReactParser(eventDetails.lowerHubContent)}</p>
           </div>
-          <div>
+          <div className="container-fluid">
             {eventDetails.lowerHubEventImages.map((image, index) => (
-              <div key={index}>
-                {index % 2 === 0 ? (
-                  <div className="row g-0 my-5">
-                    <div className="col-lg-6">
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                    <div className="col-lg-6" style={{ visibility: "hidden" }}>
-                      {" "}
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="row g-0 my-5">
-                    <div className="col-lg-6" style={{ visibility: "hidden" }}>
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                    <div className="col-lg-6">
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                  </div>
-                )}
+              <div key={index} className="text-center">
+                <img
+                  className="img-fluid"
+                  style={{ opacity: 0.9 }}
+                  src={`${ServerLocation("/Uploads/" + image)}`}
+                />
               </div>
             ))}
           </div>
