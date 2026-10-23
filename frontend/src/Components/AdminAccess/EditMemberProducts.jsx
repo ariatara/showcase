@@ -10,8 +10,10 @@ import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
 
-const EditMemberProduct = ({ eventURL, setProductDetails }) => {
+const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => {
   const [productTypes, setProductTypes] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     Axios.get(ServerLocation("/auth/productTypes"))
@@ -42,25 +44,25 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+    if (!(fieldState instanceof File)) {
+      onMissingUpload();
+      return null;
+    }
 
-    console.log("Uploaded file:" + uploadedFileName);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(
+        fieldName,
+        fieldState
+      );
 
-    return uploadedFileName;
+      console.log("Uploaded file:" + uploadedFileName);
+
+      return uploadedFileName;
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
+      return null;
+    }
   };
-
-  const products = [
-    {
-      productName: "",
-      productType: "",
-      productImage: "",
-      productTarget: "",
-      productPrice: "",
-      productInventory: "",
-      eventURL: "",
-      eventDate: "",
-    },
-  ];
 
   const productSchema = Yup.object().shape({
     products: Yup.array().of(
@@ -88,7 +90,6 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
     control,
@@ -97,11 +98,11 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
   } = useForm({
     resolver: yupResolver(productSchema),
     defaultValues: {
-      productSchema: products,
+      products: [],
     },
   });
 
-  const { fields, append, prepend, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "products",
     control,
     rules: { required: "Add at least one product" },
@@ -112,8 +113,13 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
   };
 
   useEffect(() => {
-    Axios.get(ServerLocation("auth/memberProducts/" + eventURL))
+    let active = true;
+    setLoaded(false);
+    setLoadError("");
+    setProductDetails(null);
+    Axios.get(ServerLocation("auth/memberProducts/" + encodeURIComponent(eventURL)))
       .then((response) => {
+        if (!active) return;
         if (response.data.Status) {
           const mappedProducts = response.data.Result.map((item) => ({
             productName: item.name || "",
@@ -127,21 +133,30 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
           }));
           setValue("products", mappedProducts);
           setProductDetails(mappedProducts);
+          setLoaded(true);
         } else {
-          alert(response.data.Error);
+          setLoadError(response.data.Error);
         }
       })
-      .catch((error) => console.log(error));
-  }, [eventURL, setValue, setProductDetails, getValues]);
+      .catch((error) => {
+        if (active) setLoadError(error.response?.data?.Error || error.message);
+      });
+    return () => { active = false; };
+  }, [eventURL, setValue, setProductDetails]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const subscription = watch((values) => setProductDetails(values.products ?? []));
+    return () => subscription.unsubscribe();
+  }, [loaded, watch, setProductDetails]);
+
+  if (loadError) return <p role="alert">Products could not be loaded: {loadError}</p>;
+  if (!loaded) return <p>Loading products...</p>;
 
   return (
     <form
       className="row gy-2 gx-2 justify-content-evenly"
       onSubmit={handleSubmit(onSubmit)}
-      onChange={() => {
-        const formValues = getValues();
-        setProductDetails(formValues.products);
-      }}
     >
       <h6>Member Products:</h6>
       {fields.map((item, index) => {
@@ -226,12 +241,14 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
                     const uploadedImageFile = await handleUpload(
                       event,
                       "productImage",
-                      imageFile[0]
+                      imageFile?.[0]
                     );
-                    setValue(
-                      `products.${index}.productImage`,
-                      `${uploadedImageFile}`
-                    );
+                    if (uploadedImageFile) {
+                      setValue(
+                        `products.${index}.productImage`,
+                        uploadedImageFile
+                      );
+                    }
                   }}
                 >
                   Upload
@@ -361,6 +378,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails }) => {
 EditMemberProduct.propTypes = {
   eventURL: PropTypes.string.isRequired,
   setProductDetails: PropTypes.func.isRequired,
+  onMissingUpload: PropTypes.func.isRequired,
 };
 
 export default EditMemberProduct;

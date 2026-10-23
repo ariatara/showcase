@@ -27,6 +27,7 @@ import {
   editAccountAdminAccess,
   editMemberAdminAccess,
   getEventsAdminAccess,
+  getEventAdminAccess,
   getMemberProductsAdminAccess,
   getPagesAdminAccess,
   logoutAdminAccess,
@@ -223,6 +224,13 @@ AdminRouter.post(
   AuthenticateToken,
   AuthorizeRoles(ROLES.ADMINISTRATOR),
   createEventAdminAccess
+);
+
+AdminRouter.get(
+  "/events/url/:event_url",
+  AuthenticateToken,
+  AuthorizeRoles(ROLES.ADMINISTRATOR),
+  getEventAdminAccess
 );
 
 AdminRouter.put(

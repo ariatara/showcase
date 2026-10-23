@@ -17,6 +17,7 @@ const AccountLogin = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const loginFormRef = useRef(null);
+  const loginNotificationRef = useRef(null);
   const dragRef = useRef(null);
   const NavigateTo = useNavigate();
   Axios.defaults.withCredentials = true;
@@ -80,6 +81,7 @@ const AccountLogin = () => {
 
   const handleLogin = (event) => {
     event.preventDefault();
+    setError(undefined);
     Axios.post("http://localhost:3000/user", accountDetails)
       .then((result) => {
         if (result.data.login_status) {
@@ -109,7 +111,14 @@ const AccountLogin = () => {
           setError(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          loginNotificationRef.current?.showModal();
+        } else {
+          console.log(error);
+          setError("Unable to sign in. Please try again.");
+        }
+      });
   };
 
   return (
@@ -218,6 +227,23 @@ const AccountLogin = () => {
           </div>
         </form>
       </div>
+      <dialog
+        ref={loginNotificationRef}
+        className={`${loginStyle.loginNotification} p-4 rounded-5 border text-center`}
+        role="alertdialog"
+        aria-labelledby="login-notification-title"
+        aria-describedby="login-notification-message"
+      >
+        <h2 id="login-notification-title" className="h5 text-orangered">
+          Sign In
+        </h2>
+        <p id="login-notification-message">Wrong username or password</p>
+        <form method="dialog" className="mt-4">
+          <button type="submit" className={loginStyle.loginButton} autoFocus>
+            OK
+          </button>
+        </form>
+      </dialog>
     </div>
   );
 };

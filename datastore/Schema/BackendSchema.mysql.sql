@@ -102,27 +102,37 @@ CREATE TABLE IF NOT EXISTS showcase.events (
 	id                   INT    NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	url                  VARCHAR(64)    NOT NULL   ,
 	page_title           VARCHAR(64)    NOT NULL   ,
-	event_title          VARCHAR(128)    NOT NULL   ,
-	start_date           DATE    NOT NULL   ,
-	start_time           TIME    NOT NULL   ,
-	end_date             DATE    NOT NULL   ,
-	end_time             TIME    NOT NULL   ,
-	venue_address        VARCHAR(256)    NOT NULL   ,
+	event_title          VARCHAR(128)       ,
+	start_date           DATE       ,
+	start_time           TIME       ,
+	end_date             DATE       ,
+	end_time             TIME       ,
+	venue_address        VARCHAR(256)       ,
 	map_link             VARCHAR(128)       ,
-	banner_background_image_name VARCHAR(128)    NOT NULL   ,
+	banner_background_image_name VARCHAR(128)       ,
 	upper_hub_content    TEXT       ,
 	upper_hub_background_image_name VARCHAR(1024)       ,
 	upper_hub_event_image_names TEXT       ,
 	lower_hub_content    TEXT       ,
 	lower_hub_background_image_name VARCHAR(128)       ,
 	lower_hub_event_image_names TEXT       ,
-	published            BOOLEAN       ,
+	published            BOOLEAN NOT NULL DEFAULT FALSE,
 	created_by           VARCHAR(128)       ,
 	created_date         DATETIME  DEFAULT (now())     ,
 	modified_by          VARCHAR(128)       ,
 	modified_date        DATETIME  DEFAULT (now())     ,
 	CONSTRAINT unq_events_urls UNIQUE ( url ) ,
-	CONSTRAINT unq_events_page_title UNIQUE ( page_title ) 
+	CONSTRAINT unq_events_page_title UNIQUE ( page_title ),
+	CONSTRAINT chk_events_publish_complete CHECK (
+		published = FALSE OR (
+			NULLIF(TRIM(page_title), '') IS NOT NULL AND
+			NULLIF(TRIM(event_title), '') IS NOT NULL AND
+			start_date IS NOT NULL AND start_time IS NOT NULL AND
+			end_date IS NOT NULL AND end_time IS NOT NULL AND
+			NULLIF(TRIM(venue_address), '') IS NOT NULL AND
+			NULLIF(TRIM(banner_background_image_name), '') IS NOT NULL
+		)
+	)
  ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*

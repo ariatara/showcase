@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import htmlReactParser from "html-react-parser";
 import Axios from "axios";
 import viewEventStyle from "../../../css/ViewEvent.module.css";
 import { DateInWords, TimeInWords } from "../../Utilities/Formats";
 import { ServerLocation } from "../../Utilities/Locations";
+import { eventFromRow } from "../../Utilities/EventValidation";
+import "../../../css/EditorFonts.css";
 
 const ViewEvent = () => {
-  const NavigateTo = useNavigate();
-
   const { event_url } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [eventDetails, setEventDetails] = useState({
     pageTitle: "",
@@ -36,47 +38,36 @@ const ViewEvent = () => {
   });
 
   useEffect(() => {
-    Axios.get(ServerLocation("/user/events/" + event_url))
+    let active = true;
+    setLoading(true);
+    setLoadError("");
+    Axios.get(ServerLocation("/user/events/" + encodeURIComponent(event_url)))
       .then((response) => {
-        if (response.data.Status) {
-          setEventDetails({
-            pageTitle: response.data.Result[0].page_title,
-            eventURL: response.data.Result[0].url,
-            eventTitle: response.data.Result[0].event_title,
-            startDate: response.data.Result[0].start_date,
-            startTime: response.data.Result[0].start_time,
-            endDate: response.data.Result[0].end_date,
-            endTime: response.data.Result[0].end_time,
-            venueAddress: response.data.Result[0].venue_address,
-            mapLink: response.data.Result[0].map_link,
-            bannerBackground:
-              response.data.Result[0].banner_background_image_name,
-            upperHubContent: response.data.Result[0].upper_hub_content,
-            upperHubBackground:
-              response.data.Result[0].upper_hub_background_image_name,
-            upperHubEventImages:
-              response.data.Result[0].upper_hub_event_image_names.split(","),
-            lowerHubContent: response.data.Result[0].lower_hub_content,
-            lowerHubBackground:
-              response.data.Result[0].lower_hub_background_image_name,
-            lowerHubEventImages:
-              response.data.Result[0].lower_hub_event_image_names.split(","),
-            isPublished: response.data.Result[0].published,
-            createdBy: response.data.Result[0].created_by,
-            createdDateTime: response.data.Result[0].created_date,
-            modifiedBy: response.data.Result[0].modified_by,
-            modifiedDateTime: response.data.Result[0].modified_date,
-          });
-        } else {
-          alert(response.data.Error);
+        if (!response.data.Status || !response.data.Result?.length) {
+          throw new Error(response.data.Error || "Event not found.");
         }
+        const details = eventFromRow(response.data.Result[0]);
+        if (active) setEventDetails({
+          ...details,
+          startDate: response.data.Result[0].start_date,
+          endDate: response.data.Result[0].end_date,
+          upperHubEventImages: details.upperHubEventImages.split(",").filter(Boolean),
+          lowerHubEventImages: details.lowerHubEventImages.split(",").filter(Boolean),
+        });
       })
-      .catch((error) => console.log(error));
-  }, []);
+      .catch((error) => {
+        if (active) setLoadError(error.response?.data?.Error || error.message);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [event_url]);
+
+  if (loading) return <p>Loading event...</p>;
+  if (loadError) return <p role="alert">{loadError}</p>;
 
   return (
     <div>
-      <section className={viewEventStyle.eventBanner}>
+      <section className={`${viewEventStyle.eventBanner} container-fluid`}>
         <div
           className={`${viewEventStyle.eventBannerContainer} shadow-lg bg-body rounded-5`}
           style={{
@@ -109,7 +100,7 @@ const ViewEvent = () => {
         </div>
       </section>
 
-      <div className={viewEventStyle.eventUpperSection}>
+      <div className={`${viewEventStyle.eventUpperSection} container-fluid`}>
         <div
           className={`${viewEventStyle.eventUpperContainer} border border-5 shadow-lg rounded-5`}
           style={{
@@ -124,24 +115,27 @@ const ViewEvent = () => {
           >
             <p>{htmlReactParser(eventDetails.upperHubContent)}</p>
           </div>
-        </div>
-      </div>
-
-      <div className="container-fluid">
-        <div className="row g-0">
-          {eventDetails.upperHubEventImages.map((image, index) => (
-            <div key={index}>
-              <div className="col-md-auto">
-                {" "}
-                <div
-                  className="card shadow-lg"
-                  style={{ width: "32%", margin: "auto" }}
-                >
-                  <img src={`${ServerLocation("/Uploads/" + image)}`} />
+          <div className="container-fluid">
+            <div className="row g-0">
+              {eventDetails.upperHubEventImages.map((image, index) => (
+                <div key={index}>
+                  <div className="col-md-auto">
+                    {" "}
+                    <div
+                      className="card shadow-lg bg-transparent"
+                      style={{ width: "fit-content", maxWidth: "100%", margin: "auto" }}
+                    >
+                      <img
+                        className="img-fluid"
+                        style={{ opacity: 0.9 }}
+                        src={`${ServerLocation("/Uploads/" + image)}`}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
@@ -155,53 +149,18 @@ const ViewEvent = () => {
           }}
         >
           <div
-            className={`${viewEventStyle.eventLowerContent} mt-5 rounded-5 fs-6 fw-semibold`}
+            className={`${viewEventStyle.eventLowerContent} rounded-5 fs-6 fw-semibold`}
           >
             <p>{htmlReactParser(eventDetails.lowerHubContent)}</p>
           </div>
-          <div>
+          <div className="container-fluid">
             {eventDetails.lowerHubEventImages.map((image, index) => (
-              <div key={index}>
-                {index % 2 === 0 ? (
-                  <div className="row g-0 my-5">
-                    <div className="col-lg-6">
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                    <div className="col-lg-6" style={{ visibility: "hidden" }}>
-                      {" "}
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="row g-0 my-5">
-                    <div className="col-lg-6" style={{ visibility: "hidden" }}>
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                    <div className="col-lg-6">
-                      <img
-                        className="image-fluid"
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                        width={`400px`}
-                        height={`auto`}
-                      />
-                    </div>
-                  </div>
-                )}
+              <div key={index} className="text-center">
+                <img
+                  className="img-fluid"
+                  style={{ opacity: 0.9 }}
+                  src={`${ServerLocation("/Uploads/" + image)}`}
+                />
               </div>
             ))}
           </div>

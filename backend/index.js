@@ -7,6 +7,7 @@ import AdminRouter from "./Routes/AdminRoutes.js";
 import AccountRouter from "./Routes/AccountRoutes.js";
 import UserRouter from "./Routes/UserRoutes.js";
 import VerifyRole from "./Middlewares/RoleVerification.js";
+import { PublicDirectory } from "./Utilities/FileUpload.js";
 
 DotEnv.config();
 
@@ -31,7 +32,7 @@ Server.use(Morgan("tiny"));
 Server.use("/user", UserRouter);
 Server.use("/auth", AdminRouter);
 Server.use("/account", AccountRouter);
-Server.use(Express.static("Public"));
+Server.use(Express.static(PublicDirectory));
 
 Server.get("/verifyRole/:account_role", VerifyRole, (request, response) => {
   return response.status(200).json({ Status: true });

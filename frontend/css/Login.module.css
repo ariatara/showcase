@@ -9,14 +9,34 @@
   overflow-y: auto;
 }
 
-.loginForm {
-  /*background-color: rgba(196, 65, 26);*/
+.loginForm,
+.loginNotification {
   backdrop-filter: blur(4px);
   color: white;
+}
+
+.loginForm {
+  /*background-color: rgba(196, 65, 26);*/
   position: relative;
   height: auto;
   width: auto;
   cursor: grab;
+}
+
+.loginNotification {
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+}
+
+.loginNotification::backdrop {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.loginNotification button:focus-visible {
+  outline: 2px solid orangered;
+  outline-offset: 3px;
 }
 
 .loginButton {

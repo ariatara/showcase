@@ -42,11 +42,19 @@ const AddMemberProduct = ({ setProductDetails }) => {
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(
+        fieldName,
+        fieldState
+      );
 
-    console.log("Uploaded file:" + uploadedFileName);
+      console.log("Uploaded file:" + uploadedFileName);
 
-    return uploadedFileName;
+      return uploadedFileName;
+    } catch (error) {
+      alert(error.response?.data?.Error || error.message);
+      return null;
+    }
   };
 
   const productSchema = Yup.object().shape({
@@ -72,22 +80,9 @@ const AddMemberProduct = ({ setProductDetails }) => {
     ),
   });
 
-  const products = [
-    {
-      productName: "",
-      productType: "",
-      productImage: "",
-      productTarget: "",
-      productPrice: "",
-      productInventory: "",
-      eventDate: "",
-    },
-  ];
-
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
     control,
@@ -96,11 +91,11 @@ const AddMemberProduct = ({ setProductDetails }) => {
   } = useForm({
     resolver: yupResolver(productSchema),
     defaultValues: {
-      productSchema: products,
+      products: [],
     },
   });
 
-  const { fields, append, prepend, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "products",
     control,
     rules: { required: "Add at least one product" },
@@ -110,14 +105,15 @@ const AddMemberProduct = ({ setProductDetails }) => {
     setProductDetails(formValues.products);
   };
 
+  useEffect(() => {
+    const subscription = watch((values) => setProductDetails(values.products ?? []));
+    return () => subscription.unsubscribe();
+  }, [watch, setProductDetails]);
+
   return (
     <form
       className="row gy-2 gx-2 justify-content-evenly"
       onSubmit={handleSubmit(onSubmit)}
-      onChange={() => {
-        const formValues = getValues();
-        setProductDetails(formValues.products);
-      }}
     >
       <h6>Member Products:</h6>
       {fields.map((item, index) => {
@@ -204,10 +200,12 @@ const AddMemberProduct = ({ setProductDetails }) => {
                       "productImage",
                       imageFile[0]
                     );
-                    setValue(
-                      `products.${index}.productImage`,
-                      `${uploadedImageFile}`
-                    );
+                    if (uploadedImageFile) {
+                      setValue(
+                        `products.${index}.productImage`,
+                        uploadedImageFile
+                      );
+                    }
                   }}
                 >
                   Upload

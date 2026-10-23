@@ -31,10 +31,10 @@ const Events = () => {
     const eventDetails = {
       pageTitle: targetEvent.page_title + " Copy",
       eventURL: targetEvent.url + "_copy",
-      eventTitle: targetEvent.event_title + " Copy",
-      startDate: targetEvent.start_date.split("T")[0],
+      eventTitle: targetEvent.event_title ? targetEvent.event_title + " Copy" : null,
+      startDate: targetEvent.start_date?.split("T")[0] ?? null,
       startTime: targetEvent.start_time,
-      endDate: targetEvent.end_date.split("T")[0],
+      endDate: targetEvent.end_date?.split("T")[0] ?? null,
       endTime: targetEvent.end_time,
       venueAddress: targetEvent.venue_address,
       mapLink: targetEvent.map_link,
@@ -45,7 +45,7 @@ const Events = () => {
       lowerHubContent: targetEvent.lower_hub_content,
       lowerHubBackground: targetEvent.lower_hub_background_image_name,
       lowerHubEventImages: targetEvent.lower_hub_event_image_names,
-      isPublished: targetEvent.published,
+      isPublished: false,
       createdBy: targetEvent.created_by,
       createdDateTime: Moment().format("YYYY-MM-DD HH:mm:ss"),
       modifiedBy: targetEvent.modified_by,
@@ -62,7 +62,7 @@ const Events = () => {
           alert(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
+      .catch((error) => alert(error.response?.data?.Error || error.message));
   };
 
 const handleDelete = (id) => {
@@ -101,27 +101,29 @@ const handleDelete = (id) => {
               <th>Start Time</th>
               <th>End Date</th>
               <th>End Time</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {events.map((x) => (
               <tr key={x.id}>
-                <td>{x.event_title}</td>
+                <td>{x.event_title || x.page_title}</td>
                 <td>{x.venue_address}</td>
-                <td>{x.start_date.substring(0, 10)}</td>
+                <td>{x.start_date?.substring(0, 10) || "-"}</td>
                 <td>{x.start_time}</td>
-                <td>{x.end_date.substring(0, 10)}</td>
+                <td>{x.end_date?.substring(0, 10) || "-"}</td>
                 <td>{x.end_time}</td>
+                <td>{x.published ? "Published" : "Draft"}</td>
                 <td>
-                  <Link
-                    to={"/events/" + x.url}
+                  {Boolean(x.published) && <Link
+                    to={"/events/" + encodeURIComponent(x.url)}
                     className="btn btn-custom btn-sm me-2"
                   >
                     View
-                  </Link>
+                  </Link>}
                   <Link
-                    to={"/adminDashboard/editEvent/" + x.url}
+                    to={"/adminDashboard/editEvent/" + encodeURIComponent(x.url)}
                     className="btn btn-custom btn-sm me-2"
                   >
                     Edit
