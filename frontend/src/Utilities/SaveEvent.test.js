@@ -51,3 +51,31 @@ test("saveEvent skips empty create products, but empty edit products request del
   assert.equal(calls.length, 2);
   assert.deepEqual(calls[1].body, []);
 });
+
+test("gallery create and edit saves send ordered CSV and explicit clears without mutating editor arrays", async () => {
+  for (const id of [undefined, 3]) {
+    const calls = [];
+    const images = ["retained image.png", "new.webp"];
+    const request = async (url, body) => {
+      calls.push({ url, body });
+      return { data: { Status: true, Result: { id: 3, url: "fair" } } };
+    };
+    await saveEvent({
+      id, details: { ...details, upperHubEventImages: images, lowerHubEventImages: [] }, products: [],
+    }, { post: request, put: request });
+    assert.equal(calls[0].body.upperHubEventImages, "retained image.png,new.webp");
+    assert.equal(calls[0].body.lowerHubEventImages, null);
+    assert.deepEqual(images, ["retained image.png", "new.webp"]);
+  }
+});
+
+test("invalid gallery state blocks event and product requests rather than serializing preview metadata", async () => {
+  for (const images of [[{ previewUrl: "blob:pending" }], Array.from({ length: 11 }, (_, i) => `${i}.png`)]) {
+    let calls = 0;
+    const request = () => { calls++; throw new Error("Unexpected request"); };
+    await assert.rejects(saveEvent({
+      details: { ...details, upperHubEventImages: images }, products,
+    }, { post: request, put: request }), /filename|at most 10/);
+    assert.equal(calls, 0);
+  }
+});

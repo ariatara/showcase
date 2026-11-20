@@ -6,6 +6,8 @@ import viewEventStyle from "../../../css/ViewEvent.module.css";
 import { DateInWords, TimeInWords } from "../../Utilities/Formats";
 import { ServerLocation } from "../../Utilities/Locations";
 import { eventFromRow } from "../../Utilities/EventValidation";
+import { parseEventImagePaths } from "../../Utilities/EventImages";
+import EventImageGallery from "./EventImageGallery";
 import "../../../css/EditorFonts.css";
 
 const ViewEvent = () => {
@@ -51,8 +53,8 @@ const ViewEvent = () => {
           ...details,
           startDate: response.data.Result[0].start_date,
           endDate: response.data.Result[0].end_date,
-          upperHubEventImages: details.upperHubEventImages.split(",").filter(Boolean),
-          lowerHubEventImages: details.lowerHubEventImages.split(",").filter(Boolean),
+          upperHubEventImages: parseEventImagePaths(details.upperHubEventImages),
+          lowerHubEventImages: parseEventImagePaths(details.lowerHubEventImages),
         });
       })
       .catch((error) => {
@@ -115,27 +117,8 @@ const ViewEvent = () => {
           >
             <p>{htmlReactParser(eventDetails.upperHubContent)}</p>
           </div>
-          <div className="container-fluid">
-            <div className="row g-0">
-              {eventDetails.upperHubEventImages.map((image, index) => (
-                <div key={index}>
-                  <div className="col-md-auto">
-                    {" "}
-                    <div
-                      className="card shadow-lg bg-transparent"
-                      style={{ width: "fit-content", maxWidth: "100%", margin: "auto" }}
-                    >
-                      <img
-                        className="img-fluid"
-                        style={{ opacity: 0.9 }}
-                        src={`${ServerLocation("/Uploads/" + image)}`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <EventImageGallery imagePaths={eventDetails.upperHubEventImages}
+            eventTitle={eventDetails.eventTitle} hubLabel="Upper hub" />
         </div>
       </div>
 
@@ -153,17 +136,8 @@ const ViewEvent = () => {
           >
             <p>{htmlReactParser(eventDetails.lowerHubContent)}</p>
           </div>
-          <div className="container-fluid">
-            {eventDetails.lowerHubEventImages.map((image, index) => (
-              <div key={index} className="text-center">
-                <img
-                  className="img-fluid"
-                  style={{ opacity: 0.9 }}
-                  src={`${ServerLocation("/Uploads/" + image)}`}
-                />
-              </div>
-            ))}
-          </div>
+          <EventImageGallery imagePaths={eventDetails.lowerHubEventImages}
+            eventTitle={eventDetails.eventTitle} hubLabel="Lower hub" />
         </div>
       </div>
 

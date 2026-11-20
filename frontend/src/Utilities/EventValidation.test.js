@@ -5,13 +5,21 @@ import { prepareEventPayload, missingEventFields, eventFromRow, completeProducts
 test("prepareEventPayload derives the URL and never serializes pending upload objects", () => {
   const payload = prepareEventPayload({
     pageTitle: " Spring Fair ", startDate: "", bannerBackground: { name: "pending.jpg" },
-    upperHubEventImages: ["a.jpg", "b.jpg"], lowerHubEventImages: [{ name: "pending.jpg" }],
+    upperHubEventImages: ["a.jpg", "b.jpg"], lowerHubEventImages: [],
   });
   assert.equal(payload.eventURL, "spring_fair");
   assert.equal(payload.startDate, null);
   assert.equal(payload.bannerBackground, null);
   assert.equal(payload.upperHubEventImages, "a.jpg,b.jpg");
   assert.equal(payload.lowerHubEventImages, null);
+  assert.throws(() => prepareEventPayload({ lowerHubEventImages: [{ name: "pending.jpg" }] }), /filename/i);
+});
+
+test("event gallery payloads canonicalize CSV and preserve omitted properties", () => {
+  const payload = prepareEventPayload({ pageTitle: "Fair", upperHubEventImages: " b.jpg, a.png ", lowerHubEventImages: null });
+  assert.equal(payload.upperHubEventImages, "b.jpg,a.png");
+  assert.equal(payload.lowerHubEventImages, null);
+  assert.equal(Object.hasOwn(prepareEventPayload({ pageTitle: "Fair" }), "upperHubEventImages"), false);
 });
 
 test("missingEventFields permits drafts and reports publish-only fields", () => {

@@ -15,6 +15,26 @@ const complete = {
   bannerBackground: "banner.jpg", isPublished: true,
 };
 
+test("gallery CSV accepts ten ordered filenames, canonicalizes whitespace, and distinguishes clear from omission", () => {
+  const paths = Array.from({ length: 10 }, (_, i) => `${i}.jpg`);
+  assert.equal(normalizeEventPayload({ upperHubEventImages: " b.jpg, a.png " }).upperHubEventImages, "b.jpg,a.png");
+  assert.equal(normalizeEventPayload({ lowerHubEventImages: "" }).lowerHubEventImages, null);
+  assert.equal(Object.hasOwn(normalizeEventPayload({}), "lowerHubEventImages"), false);
+  assert.deepEqual(validateEvent({ ...complete, upperHubEventImages: paths.join(",") }), {});
+  assert.ok(validateEvent({ ...complete, upperHubEventImages: [...paths, "extra.jpg"].join(",") }).upperHubEventImages);
+});
+
+test("gallery validation rejects unsafe filenames, nontext payloads, and oversized UTF-8 CSV", () => {
+  for (const field of ["upperHubEventImages", "lowerHubEventImages"]) {
+    for (const value of ["../a.jpg", "a\\b.jpg", "https://example.test/a.jpg", "a\0b", ".", ".."]) {
+      assert.ok(validateEvent({ ...complete, [field]: value })[field], value);
+    }
+    assert.throws(() => normalizeEventPayload({ [field]: ["a.jpg"] }), /text/);
+    assert.ok(validateEvent({ ...complete, [field]: "é".repeat(32768) })[field]);
+    assert.deepEqual(validateEvent({ ...complete, [field]: "fête #1 %.png,other.jpg" }), {});
+  }
+});
+
 test("normalizeEventPayload trims fields, maps blanks to null and parses false explicitly", () => {
   assert.deepEqual(normalizeEventPayload({ pageTitle: " Fair ", startDate: "", isPublished: "false" }),
     { pageTitle: "Fair", startDate: null, isPublished: false });

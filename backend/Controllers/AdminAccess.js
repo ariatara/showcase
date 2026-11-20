@@ -2,6 +2,8 @@ import DatastoreConnection, { createDatastoreConnection } from "../Utilities/Dat
 import FileUpload from "../Utilities/FileUpload.js";
 import { createEventHandlers } from "./EventAccess.js";
 import { replaceMemberProducts } from "../Utilities/MemberProductWrites.js";
+import { uploadGalleryImage } from "./GalleryImageUpload.js";
+import { GALLERY_FIELDS } from "../Utilities/EventValidation.js";
 
 export const addRoleTypeAdminAccess = (request, response) => {
   const SQLQuery = "INSERT INTO role_types (`role`) VALUES (?)";
@@ -492,6 +494,7 @@ export const deletePageAdminAccess = (request, response) => {
 
 export const uploadFileAdminAccess = (request, response, next) => {
   const fieldName = request.params.fieldName;
+  if (GALLERY_FIELDS.includes(fieldName)) return uploadGalleryImage(request, response);
 
   FileUpload.single(fieldName)(request, response, (error) => {
     if (error) {

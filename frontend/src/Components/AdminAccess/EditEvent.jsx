@@ -4,6 +4,7 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useNavigate, useParams } from "react-router-dom";
 import eventStyle from "../../../css/CreateEvent.module.css";
+import imageEditorStyle from "../../../css/EventImageEditor.module.css";
 import loginStyle from "../../../css/Login.module.css";
 import { ServerLocation } from "../../Utilities/Locations";
 import EditMemberProducts from "./EditMemberProducts";
@@ -12,8 +13,9 @@ import { eventFromRow } from "../../Utilities/EventValidation";
 import { saveEvent } from "../../Utilities/SaveEvent";
 import { UploadFileByFieldName } from "../../Utilities/Uploads";
 import { EditorFontOptions, matchEditorFont } from "../QuillEditor/EditorFonts";
-
-const MAX_FILE_COUNT = 5;
+import { eventImageUrl, parseEventImagePaths } from "../../Utilities/EventImages";
+import EventImageEditor from "./EventImageEditor";
+import EventImagePreview from "./EventImagePreview";
 
 const eventEditorModules = {
   clipboard: {
@@ -53,10 +55,10 @@ export const EditEvent = () => {
     bannerBackground: "",
     upperHubBackground: "",
     upperHubContent: "",
-    upperHubEventImages: "",
+    upperHubEventImages: [],
     lowerHubBackground: "",
     lowerHubContent: "",
-    lowerHubEventImages: "",
+    lowerHubEventImages: [],
     eventURL: "",
     isPublished: false,
     createdBy: "",
@@ -69,12 +71,18 @@ export const EditEvent = () => {
     let active = true;
     setLoading(true);
     setLoadError("");
+    setPendingUploads({});
     Axios.get(ServerLocation("/auth/events/url/" + encodeURIComponent(event_url)))
       .then((response) => {
         if (!response.data.Status || !response.data.Result?.length) {
           throw new Error(response.data.Error || "Event not found.");
         }
-        if (active) setEventDetails(eventFromRow(response.data.Result[0]));
+        const details = eventFromRow(response.data.Result[0]);
+        if (active) setEventDetails({
+          ...details,
+          upperHubEventImages: parseEventImagePaths(details.upperHubEventImages),
+          lowerHubEventImages: parseEventImagePaths(details.lowerHubEventImages),
+        });
       })
       .catch((error) => {
         if (active) setLoadError(error.response?.data?.Error || error.message);
@@ -87,32 +95,7 @@ export const EditEvent = () => {
 
   const showUploadWarning = () => uploadWarningRef.current.showModal();
 
-  const handleMultipleUploads = async (event, fieldName, fieldState) => {
-    event.preventDefault();
-
-    if (!fieldState?.length) {
-      showUploadWarning();
-      return;
-    }
-    const targetFileNames = [...new Set(fieldState)];
-    if (targetFileNames.length > MAX_FILE_COUNT) {
-      alert("Maximum of five files can be uploaded.");
-      return;
-    }
-    setUploading((count) => count + 1);
-    try {
-      const uploadedFileNameCollection = [];
-      for (const file of targetFileNames) {
-        uploadedFileNameCollection.push(await UploadFileByFieldName(fieldName, file));
-      }
-      setEventDetails((current) => ({ ...current, [fieldName]: uploadedFileNameCollection.join(",") }));
-      setPendingUploads((current) => ({ ...current, [fieldName]: null }));
-    } catch (error) {
-      alert(error.response?.data?.Error || error.message);
-    } finally {
-      setUploading((count) => count - 1);
-    }
-  };
+  const handleGalleryBusy = (busy) => setUploading((count) => count + (busy ? 1 : -1));
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
@@ -214,8 +197,8 @@ export const EditEvent = () => {
             }
           ></input>
         </div>
-        <div className={eventStyle.eventDate}>
-          <h6>Event Start:</h6>
+        <fieldset className={eventStyle.eventDate}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event Start:</span></legend>
           <div className="row">
             <div className="col">
               <input
@@ -248,9 +231,9 @@ export const EditEvent = () => {
               ></input>
             </div>
           </div>
-        </div>
-        <div className={eventStyle.eventDate}>
-          <h6>Event End:</h6>
+        </fieldset>
+        <fieldset className={eventStyle.eventDate}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event End:</span></legend>
           <div className="row">
             <div className="col">
               <input
@@ -283,7 +266,7 @@ export const EditEvent = () => {
               ></input>
             </div>
           </div>
-        </div>
+        </fieldset>
         <div className="input-group mb-2">
           <span className="input-group-text" id="basic-addon1">
             Venue
@@ -319,11 +302,9 @@ export const EditEvent = () => {
             }
           ></input>
         </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Banner Background Image:
-            <UploadedFileNames fileNames={eventDetails.bannerBackground} />
-          </h6>
+        <fieldset className={eventStyle.imageUploadContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Banner Background Image:</span></legend>
+          <UploadedFileNames fileNames={eventDetails.bannerBackground} />
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -352,9 +333,9 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-        </div>
-        <div className={eventStyle.textInputContainer}>
-          <h6>Upper Hub Content:</h6>
+        </fieldset>
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Upper Hub Content:</span></legend>
           <div className={eventStyle.editorContainer}>
             <ReactQuill
               className={eventStyle.contentEditor}
@@ -365,12 +346,9 @@ export const EditEvent = () => {
               onChange={setUpperHubContent}
             />
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Upper Hub Background Image:
-            <UploadedFileNames fileNames={eventDetails.upperHubBackground} />
-          </h6>
+        </fieldset>
+        <fieldset className={`${eventStyle.imageUploadContainer} ${imageEditorStyle.compact}`}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Upper Hub Background Image:</span></legend>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -399,47 +377,23 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Upper Hub Event Images:
-            <UploadedFileNames fileNames={eventDetails.upperHubEventImages} />
-          </h6>
-          <div className="input-group mb-2">
-            <input
-              className="form-control"
-              type="file"
-              multiple
-              id="upperHubEventImages"
-              name="upperHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setPendingUploads({
-                  ...pendingUploads,
-                  upperHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="upperHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "upperHubEventImages",
-                  pendingUploads.upperHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-        </div>
-        <div className={eventStyle.textInputContainer}>
-          <h6>Lower Hub Content:</h6>
+          {eventDetails.upperHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
+            <li className={imageEditorStyle.card}>
+              <EventImagePreview key={eventDetails.upperHubBackground}
+                src={eventImageUrl(eventDetails.upperHubBackground)} name={eventDetails.upperHubBackground} />
+              <span className={imageEditorStyle.status}>Uploaded</span>
+            </li>
+          </ul>}
+        </fieldset>
+        <EventImageEditor key={`${event_url}-upper`} fieldName="upperHubEventImages"
+          className={`${imageEditorStyle.compact} rounded-0 my-0`}
+          label={<span className="h6">Upper Hub Event Images:</span>}
+          imagePaths={eventDetails.upperHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, upperHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, upperHubEventImages: pending }))} />
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Lower Hub Content:</span></legend>
           <div className={eventStyle.editorContainer}>
             <ReactQuill
               className={eventStyle.contentEditor}
@@ -450,12 +404,9 @@ export const EditEvent = () => {
               onChange={setLowerHubContent}
             />
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Lower Hub Background Image:
-            <UploadedFileNames fileNames={eventDetails.lowerHubBackground} />
-          </h6>
+        </fieldset>
+        <fieldset className={`${eventStyle.imageUploadContainer} ${imageEditorStyle.compact}`}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Lower Hub Background Image:</span></legend>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -484,56 +435,33 @@ export const EditEvent = () => {
               Upload
             </button>
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Lower Hub Event Images:
-            <UploadedFileNames fileNames={eventDetails.lowerHubEventImages} />
-          </h6>
-          <div className="input-group mb-2">
-            <input
-              className="form-control"
-              type="file"
-              multiple
-              id="lowerHubEventImages"
-              name="lowerHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setPendingUploads({
-                  ...pendingUploads,
-                  lowerHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="lowerHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "lowerHubEventImages",
-                  pendingUploads.lowerHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-        </div>
-        <section className={eventStyle.textInputContainer}>
+          {eventDetails.lowerHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
+            <li className={imageEditorStyle.card}>
+              <EventImagePreview key={eventDetails.lowerHubBackground}
+                src={eventImageUrl(eventDetails.lowerHubBackground)} name={eventDetails.lowerHubBackground} />
+              <span className={imageEditorStyle.status}>Uploaded</span>
+            </li>
+          </ul>}
+        </fieldset>
+        <EventImageEditor key={`${event_url}-lower`} fieldName="lowerHubEventImages"
+          className={`${imageEditorStyle.compact} rounded-0 my-0`}
+          label={<span className="h6">Lower Hub Event Images:</span>}
+          imagePaths={eventDetails.lowerHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, lowerHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, lowerHubEventImages: pending }))} />
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Member Products:</span></legend>
           <EditMemberProducts
             eventURL={event_url}
             setProductDetails={setProductDetails}
             onMissingUpload={showUploadWarning}
           ></EditMemberProducts>
-        </section>
+        </fieldset>
       </div>
       <div className={eventStyle.eventMenu}>
-        <div className={eventStyle.eventMenuItem}>
-          <h4>URL</h4>
+        <fieldset className={eventStyle.eventMenuItem}>
+          <legend className={eventStyle.boxHeading}><span className="h6">URL:</span></legend>
           <div className="input-group mb-3">
             <span className="input-group-text" id="basic-addon">
               ~/events/
@@ -547,9 +475,9 @@ export const EditEvent = () => {
               readOnly
             ></input>
           </div>
-        </div>
-        <div className={eventStyle.eventMenuItem}>
-          <h4>Visibility</h4>
+        </fieldset>
+        <fieldset className={eventStyle.eventMenuItem}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Visibility:</span></legend>
           <div className="form-check">
             <input
               className="form-check-input"
@@ -595,7 +523,7 @@ export const EditEvent = () => {
           >
             {saving ? "Saving..." : "Save"}
           </button>
-        </div>
+        </fieldset>
       </div>
       <dialog
         ref={uploadWarningRef}

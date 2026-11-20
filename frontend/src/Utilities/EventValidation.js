@@ -1,3 +1,5 @@
+import { GALLERY_FIELDS, parseEventImagePaths, serializeEventImagePaths } from "./EventImages.js";
+
 const fieldColumns = {
   pageTitle: "page_title", eventURL: "url", eventTitle: "event_title",
   startDate: "start_date", startTime: "start_time", endDate: "end_date",
@@ -19,6 +21,12 @@ export function prepareEventPayload(details) {
   const payload = {};
   for (const key of Object.keys(fieldColumns)) {
     let value = details[key];
+    if (GALLERY_FIELDS.includes(key)) {
+      if (Object.hasOwn(details, key)) {
+        payload[key] = serializeEventImagePaths(Array.isArray(value) ? value : parseEventImagePaths(value));
+      }
+      continue;
+    }
     if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
       value = value.join(",");
     }

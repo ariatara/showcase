@@ -8,8 +8,7 @@ import AddMemberProduct from "./AddMemberProducts";
 import { UploadFileByFieldName } from "../../Utilities/Uploads";
 import { saveEvent } from "../../Utilities/SaveEvent";
 import UploadedFileNames from "./UploadedFileNames";
-
-const MAX_FILE_COUNT = 5;
+import EventImageEditor from "./EventImageEditor";
 
 export const CreateEvent = () => {
   const NavigateTo = useNavigate();
@@ -44,48 +43,7 @@ export const CreateEvent = () => {
 
   const getEventURL = () => eventDetails.pageTitle.trim().replace(/ /g, "_").toLocaleLowerCase();
 
-  const handleMultipleUploads = async (event, fieldName, fieldState) => {
-    event.preventDefault();
-
-    if (!fieldState?.length) {
-      alert("Select at least one file before uploading.");
-      return;
-    }
-
-    const targetFileNames = [...new Set(fieldState)];
-
-    if (targetFileNames.length > MAX_FILE_COUNT) {
-      alert("Maximum of five files can be uploaded.");
-      return;
-    }
-
-    setUploading((count) => count + 1);
-    try {
-      const uploadedFileNameCollection = [];
-
-      for (let fileIndex in targetFileNames) {
-        const uploadedFileName = await UploadFileByFieldName(
-          fieldName,
-          targetFileNames[fileIndex]
-        );
-        uploadedFileNameCollection.push(uploadedFileName);
-      }
-
-      uploadedFileNameCollection.forEach((x) => {
-        console.log("Uploaded file:" + x);
-      });
-
-      setEventDetails((current) => ({
-        ...current,
-        [fieldName]: uploadedFileNameCollection.join(","),
-      }));
-      setPendingUploads((current) => ({ ...current, [fieldName]: null }));
-    } catch (error) {
-      alert(error.response?.data?.Error || error.message);
-    } finally {
-      setUploading((count) => count - 1);
-    }
-  };
+  const handleGalleryBusy = (busy) => setUploading((count) => count + (busy ? 1 : -1));
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
@@ -366,44 +324,11 @@ export const CreateEvent = () => {
             </button>
           </div>
         </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Upper Hub Event Images:
-            <UploadedFileNames fileNames={eventDetails.upperHubEventImages} />
-          </h6>
-          <div className="input-group mb-3">
-            <input
-              className="form-control form-control-sm"
-              type="file"
-              multiple
-              id="upperHubEventImages"
-              name="upperHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setPendingUploads({
-                  ...pendingUploads,
-                  upperHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="upperHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "upperHubEventImages",
-                  pendingUploads.upperHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-        </div>
+        <EventImageEditor fieldName="upperHubEventImages" label="Upper hub event images"
+          imagePaths={eventDetails.upperHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, upperHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, upperHubEventImages: pending }))} />
         <div className={eventStyle.textInputContainer}>
           <h6>Lower Hub Content:</h6>
           <div className={eventStyle.editorContainer}>
@@ -450,44 +375,11 @@ export const CreateEvent = () => {
             </button>
           </div>
         </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>
-            Lower Hub Event Images:
-            <UploadedFileNames fileNames={eventDetails.lowerHubEventImages} />
-          </h6>
-          <div className="input-group mb-3">
-            <input
-              className="form-control form-control-sm"
-              type="file"
-              multiple
-              id="lowerHubEventImages"
-              name="lowerHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setPendingUploads({
-                  ...pendingUploads,
-                  lowerHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="lowerHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "lowerHubEventImages",
-                  pendingUploads.lowerHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-        </div>
+        <EventImageEditor fieldName="lowerHubEventImages" label="Lower hub event images"
+          imagePaths={eventDetails.lowerHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, lowerHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, lowerHubEventImages: pending }))} />
         <section className={eventStyle.textInputContainer}>
           <AddMemberProduct
             setProductDetails={setProductDetails}

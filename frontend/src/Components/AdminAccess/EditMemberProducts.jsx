@@ -158,7 +158,6 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => 
       className="row gy-2 gx-2 justify-content-evenly"
       onSubmit={handleSubmit(onSubmit)}
     >
-      <h6>Member Products:</h6>
       {fields.map((item, index) => {
         return (
           <div key={item.id} className="row gy-2 gx-2 justify-left">

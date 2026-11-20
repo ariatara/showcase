@@ -36,6 +36,14 @@ for (const upgrade of [false, true]) {
         user: process.env.MYSQL_TEST_USER || "root",
         password: process.env.MYSQL_TEST_PASSWORD,
       });
+      await new Promise((resolve, reject) => connection.connect((error) => {
+        if (error) {
+          connection.destroy();
+          reject(error);
+        } else {
+          resolve();
+        }
+      }));
       const db = connection.promise();
       const database = `showcase_event_test_${randomUUID().replaceAll("-", "")}`;
       let created = false;
@@ -92,11 +100,15 @@ for (const upgrade of [false, true]) {
         return { code: response.status, ...await response.json() };
       }
 
-      const saved = await request("/events", "POST", { pageTitle: "Fair", eventURL: "fair" });
+      const saved = await request("/events", "POST", {
+        pageTitle: "Fair", eventURL: "fair", upperHubEventImages: "first.png,second.jpg", lowerHubEventImages: "lower.webp",
+      });
       assert.equal(saved.Status, true);
       const id = saved.Result.id;
       const draft = await request("/admin/events/fair");
       assert.equal(draft.Result[0].start_date, null);
+      assert.equal(draft.Result[0].upper_hub_event_image_names, "first.png,second.jpg");
+      assert.equal(draft.Result[0].lower_hub_event_image_names, "lower.webp");
       assert.equal((await request("/admin/events/fair", "GET", undefined, "")).Status, false);
       assert.equal((await request("/admin/events/fair", "GET", undefined, memberToken)).code, 403);
       assert.equal((await request("/admin/events/fair", "GET", undefined, "invalid")).code, 401);
@@ -111,6 +123,26 @@ for (const upgrade of [false, true]) {
         bannerBackground: "banner.jpg", isPublished: true };
       assert.equal((await request(`/events/${id}`, "PUT", full)).Status, true);
       assert.equal((await request("/public/events/fair")).code, 200);
+      const galleryPaths = Array.from({ length: 10 }, (_, i) => `gallery_${i}.jpg`);
+      for (const field of ["upperHubEventImages", "lowerHubEventImages"]) {
+        const column = field === "upperHubEventImages" ? "upper_hub_event_image_names" : "lower_hub_event_image_names";
+        for (const paths of [galleryPaths.slice(0, 1), galleryPaths, [...galleryPaths].reverse(), galleryPaths.slice(2), []]) {
+          const csv = paths.join(",") || null;
+          assert.equal((await request(`/events/${id}`, "PUT", { [field]: csv })).Status, true);
+          const [[stored]] = await db.query(`SELECT ${column} FROM events WHERE id = ?`, [id]);
+          assert.equal(stored[column], csv);
+          assert.equal((await request("/admin/events/fair")).Result[0][column], csv);
+          assert.equal((await request("/public/events/fair")).Result[0][column], csv);
+        }
+        assert.equal((await request(`/events/${id}`, "PUT", {
+          [field]: [...galleryPaths, "extra.jpg"].join(","),
+        })).code, 400);
+      }
+      assert.equal((await request(`/events/${id}`, "PUT", {
+        upperHubEventImages: "upper.jpg", lowerHubEventImages: "lower.png",
+      })).Status, true);
+      await request(`/events/${id}`, "PUT", { upperHubEventImages: null });
+      assert.equal((await request("/public/events/fair")).Result[0].lower_hub_event_image_names, "lower.png");
       for (const column of ["event_title", "start_date", "start_time", "end_date", "end_time",
         "venue_address", "banner_background_image_name"]) {
         await assert.rejects(db.query(`UPDATE events SET ${column} = NULL WHERE id = ?`, [id]),

@@ -1,0 +1,118 @@
+.editor {
+  min-width: 0;
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #717171;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  color: white;
+}
+
+.help,
+.status {
+  font-size: 0.85rem;
+  color: #d7d7d7;
+}
+
+.count {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  list-style: none;
+  gap: 12px;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.card {
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+  border: 1px solid #666;
+  border-radius: 10px;
+  background: #282828;
+}
+
+.compact {
+  min-width: 0;
+}
+
+.compact .grid {
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  overflow-x: auto;
+}
+
+.compact .uploadedFilename {
+  display: none;
+}
+
+.card img,
+.previewError {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #171717;
+}
+
+.previewError {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+}
+
+.filename,
+.uploadedFilename,
+.status {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 6px;
+  color: white;
+  background: #383838;
+  font-size: 1rem;
+}
+
+.actions button:focus-visible {
+  outline: 3px solid #ffc078;
+  outline-offset: 2px;
+}
+
+.actions button:hover:not(:disabled) {
+  background: #505050;
+  border-color: #ddd;
+}
+
+.actions button:disabled {
+  opacity: 0.45;
+}
+
+.error {
+  margin: 12px 0 0;
+  color: #ffb4b4;
+}

@@ -1,3 +1,6 @@
+export const GALLERY_FIELDS = ["upperHubEventImages", "lowerHubEventImages"];
+export const MAX_GALLERY_IMAGES = 10;
+
 export const EVENT_FIELDS = {
   pageTitle: ["page_title", "Page title", 64],
   eventURL: ["url", "URL", 64],
@@ -36,6 +39,9 @@ export function normalizeEventPayload(body) {
       throw new Error(`${label} must be text.`);
     }
     normalized[key] = value === null ? null : value.trim() || null;
+    if (GALLERY_FIELDS.includes(key) && normalized[key]) {
+      normalized[key] = normalized[key].split(",").map((name) => name.trim()).filter(Boolean).join(",") || null;
+    }
   }
   if (Object.hasOwn(body, "isPublished")) {
     if (![true, false, 1, 0, "true", "false", "1", "0"].includes(body.isPublished)) {
@@ -81,6 +87,15 @@ export function validateEvent(event) {
       }
     } else if (!max && Buffer.byteLength(value, "utf8") > 65535) {
       errors[key] = `${label} exceeds the database text limit.`;
+    }
+    if (GALLERY_FIELDS.includes(key) && typeof value === "string" && !errors[key]) {
+      const names = value.split(",").map((name) => name.trim()).filter(Boolean);
+      if (names.length > MAX_GALLERY_IMAGES) {
+        errors[key] = `${label} can contain at most ${MAX_GALLERY_IMAGES} images.`;
+      } else if (names.some((name) => /[\\/:]/.test(name) || [".", ".."].includes(name)
+        || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127))) {
+        errors[key] = `${label} must contain uploaded filenames, not paths or URLs.`;
+      }
     }
   }
   return errors;

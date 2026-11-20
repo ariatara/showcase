@@ -84,3 +84,31 @@ test("public fetch filters published rows while the admin fetch can reopen draft
   assert.match(sqlQueries[0], /published = TRUE/);
   assert.doesNotMatch(sqlQueries[1], /published/);
 });
+
+test("gallery writes preserve order and clear only the explicitly supplied hub", async () => {
+  const row = { page_title: "Fair", url: "fair", published: 0,
+    upper_hub_event_image_names: "a.jpg,b.png", lower_hub_event_image_names: "c.gif" };
+  const handlers = createEventHandlers({ query(sql, values, callback) {
+    if (sql.startsWith("SELECT")) return callback(null, [row]);
+    if (sql.startsWith("INSERT")) {
+      assert.equal(values[0].upper_hub_event_image_names, "b.png,a.jpg");
+      assert.equal(values[0].lower_hub_event_image_names, "c.gif");
+      return callback(null, { insertId: 3 });
+    }
+    assert.equal(values[0].upper_hub_event_image_names, null);
+    assert.equal(Object.hasOwn(values[0], "lower_hub_event_image_names"), false);
+    callback(null, { affectedRows: 1 });
+  } });
+  assert.equal((await invoke(handlers.createEventAdminAccess, {
+    pageTitle: "Fair", eventURL: "fair", upperHubEventImages: " b.png, a.jpg ", lowerHubEventImages: "c.gif",
+  })).Status, true);
+  assert.equal((await invoke(handlers.updateEventAdminAccess, { upperHubEventImages: null }, { id: "3" })).Status, true);
+});
+
+test("invalid gallery references never reach database writes", async () => {
+  const handler = createEventHandlers({ query() { assert.fail("Invalid gallery was written"); } }).createEventAdminAccess;
+  for (const value of ["../a.jpg", Array.from({ length: 11 }, (_, i) => `${i}.png`).join(",")]) {
+    const result = await invoke(handler, { pageTitle: "Fair", eventURL: "fair", upperHubEventImages: value });
+    assert.equal(result.code, 400);
+  }
+});
