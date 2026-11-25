@@ -10,7 +10,7 @@ import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
 
-const AddMemberProduct = ({ setProductDetails }) => {
+const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
   const [productTypes, setProductTypes] = useState([]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ const AddMemberProduct = ({ setProductDetails }) => {
           .required("Price is required"),
         productInventory: Yup.number()
           .typeError("Inventory must be a number")
-          .positive("Inventory must be a positive number")
+          .min(0, "Inventory cannot be negative")
           .required("Inventory is required")
           .integer("Inventory must be an integer"),
         eventDate: Yup.date()
@@ -100,6 +100,13 @@ const AddMemberProduct = ({ setProductDetails }) => {
     control,
     rules: { required: "Add at least one product" },
   });
+
+  useEffect(() => {
+    productReceipt?.products.forEach((product, index) => {
+      setValue(`products.${index}.productId`, product.productId);
+      setValue(`products.${index}.version`, product.version);
+    });
+  }, [productReceipt, setValue]);
 
   const onSubmit = (formValues) => {
     setProductDetails(formValues.products);
@@ -333,6 +340,7 @@ const AddMemberProduct = ({ setProductDetails }) => {
 };
 
 AddMemberProduct.propTypes = {
+  productReceipt: PropTypes.shape({ products: PropTypes.array.isRequired }),
   setProductDetails: PropTypes.func.isRequired,
 };
 

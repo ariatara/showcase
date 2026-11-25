@@ -398,9 +398,9 @@ export const deleteEventAdminAccess = (request, response) => {
 
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)
-      return response.json({
+      return response.status(error.code === "ER_ROW_IS_REFERENCED_2" ? 409 : 500).json({
         Status: false,
-        Error: "Delete account failed.",
+        Error: error.code === "ER_ROW_IS_REFERENCED_2" ? "This event has cart or order references. Unpublish it instead." : "Delete event failed.",
       });
     return response.json({ Status: true, Result: result });
   });
@@ -517,7 +517,7 @@ export const getMemberProductsAdminAccess = (request, response) => {
   const eventURL = request.params.event_url;
 
   if (eventURL) {
-    const SQLQuery = "SELECT * FROM member_products WHERE event_url = ?";
+    const SQLQuery = "SELECT *, DATE_FORMAT(event_date, '%Y-%m-%d') AS event_date FROM member_products WHERE event_url = ? AND active = TRUE ORDER BY id";
 
     DatastoreConnection.query(SQLQuery, [eventURL], (error, result) => {
       if (error) {
@@ -535,79 +535,32 @@ export const getMemberProductsAdminAccess = (request, response) => {
   }
 };
 
-export const createMemberProductsAdminAccess = (
-  request,
-  response,
-  callback = null
-) => {
-  const SQLQuery =
-    "INSERT INTO member_products (name, type, image_name, target, price, inventory, event_url, event_date) VALUES ?";
-
-  console.log(request.body);
-
+export const createMemberProductsAdminAccess = async (request, response) => {
   const products = Array.isArray(request.body) ? request.body : [request.body];
-
-  if (products.length === 0) {
-    const result = { Status: true, ProductsCreated: 0 };
-    return callback ? callback(null, result) : response.json(result);
+  if (!products.length) return response.json({ Status: true, ProductsCreated: 0 });
+  if (!products[0]?.eventURL || products.some((product) => product?.eventURL !== products[0].eventURL)) {
+    return response.status(400).json({ Status: false, Error: "Products must belong to one event." });
   }
-
-  const memberProductsDetails = products.map((product) => [
-    product.productName,
-    product.productType,
-    product.productImage,
-    product.productTarget,
-    product.productPrice,
-    product.productInventory,
-    product.eventURL,
-    product.eventDate,
-  ]);
-
-  console.log("Bulk inserting products:", memberProductsDetails.length);
-
-  DatastoreConnection.query(
-    SQLQuery,
-    [memberProductsDetails],
-    (error, result) => {
-      if (error) {
-        console.log(
-          "Create member product error: " + error + "; result: " + result
-        );
-        const errorResponse = {
-          Status: false,
-          Error: "Create member products failed.",
-        };
-
-        if (callback) {
-          return callback(error, null);
-        }
-        return response.json(errorResponse);
-      }
-
-      const successResponse = {
-        Status: true,
-        ProductsCreated: memberProductsDetails.length,
-      };
-
-      if (callback) {
-        return callback(null, successResponse);
-      }
-      return response.json(successResponse);
-    }
-  );
+  request.params.event_url = products[0].eventURL;
+  request.body = products;
+  return updateMemberProductsByEventAdminAccess(request, response);
 };
 
 export const updateMemberProductsByEventAdminAccess = async (request, response) => {
   // A dedicated connection prevents interleaving unrelated requests in this transaction.
   const connection = createDatastoreConnection().promise();
   try {
-    const count = await replaceMemberProducts(connection, request.params.event_url, request.body);
-    return response.json({ Status: true, ProductsUpdated: count });
+    const expectedVersion = request.get("X-Product-Version");
+    if (!/^[1-9]\d*$/.test(expectedVersion || "")) {
+      return response.status(400).json({ Status: false, Error: "Product collection version is required. Reopen the event." });
+    }
+    const saved = await replaceMemberProducts(connection, request.params.event_url, request.body, expectedVersion);
+    return response.json({ Status: true, ProductsUpdated: saved.products.length, Result: saved });
   } catch (error) {
     console.error("Update member products failed:", error.code || error.message);
-    return response.status(400).json({
+    return response.status(error.status || 400).json({
       Status: false,
-      Error: "Member products were not saved. Check product fields and try again.",
+      Error: error.status ? error.message : "Member products were not saved. Check product fields and try again.",
     });
   } finally {
     await connection.end();
@@ -621,7 +574,7 @@ export const deleteMemberProductsByEventAdminAccess = (
 ) => {
   const eventURL = request.params.event_url;
 
-  const SQLQuery = "DELETE FROM member_products WHERE event_url = ?";
+  const SQLQuery = "UPDATE member_products SET active=FALSE, version=version+1 WHERE event_url = ?";
 
   DatastoreConnection.query(SQLQuery, [eventURL], (error, result) => {
     if (error) {
@@ -648,7 +601,7 @@ export const deleteMemberProductsByEventAdminAccess = (
 export const deleteMemberProductByIdAdminAccess = (request, response) => {
   const id = request.params.id;
 
-  const SQLQuery = "DELETE FROM member_products WHERE id = ?";
+  const SQLQuery = "UPDATE member_products SET active=FALSE, version=version+1 WHERE id = ?";
 
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)

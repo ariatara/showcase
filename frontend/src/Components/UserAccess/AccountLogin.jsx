@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { localReturn } from "../../Utilities/CommerceApi";
 import { Eye, EyeSlash } from "phosphor-react";
 import { ROLES } from "../../Configurations/Roles";
 import loginStyle from "../../../css/Login.module.css";
@@ -20,6 +21,7 @@ const AccountLogin = () => {
   const loginNotificationRef = useRef(null);
   const dragRef = useRef(null);
   const NavigateTo = useNavigate();
+  const returnTo = localReturn(new URLSearchParams(useLocation().search).get("returnTo"));
   Axios.defaults.withCredentials = true;
 
   useEffect(() => {
@@ -93,7 +95,7 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/adminDashboard");
+            NavigateTo(returnTo || "/adminDashboard");
           } else if (
             result.data.account_roles.includes(ROLES.MEMBER) ||
             result.data.account_roles.includes(ROLES.NONMEMBER)
@@ -105,7 +107,7 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/accountDashboard/" + accountDetails.account_email);
+            NavigateTo(returnTo || "/accountDashboard/" + accountDetails.account_email);
           }
         } else {
           setError(result.data.Error);
@@ -202,7 +204,7 @@ const AccountLogin = () => {
                 required
               />
               <label htmlFor="tick">
-                I have read the Membership Agreement
+                I have read the Uttoron Account Agreement
               </label>
             </div>
             <div>

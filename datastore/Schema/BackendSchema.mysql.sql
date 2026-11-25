@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS showcase.events (
 	id                   INT    NOT NULL AUTO_INCREMENT  PRIMARY KEY,
 	url                  VARCHAR(64)    NOT NULL   ,
 	page_title           VARCHAR(64)    NOT NULL   ,
+	view_template        VARCHAR(64) NOT NULL DEFAULT 'signature',
 	event_title          VARCHAR(128)       ,
 	start_date           DATE       ,
 	start_time           TIME       ,
@@ -214,6 +215,9 @@ ALTER TABLE showcase.non_member_products ADD CONSTRAINT fk_non_member_products_t
 /*
 Initial Table Values
 */
+
+-- Complete a fresh commerce installation with Migrations/003_event_commerce.mysql.sql.
+-- The commerce DDL is kept in that migration rather than duplicated here.
 
 INSERT IGNORE INTO showcase.role_types
 	(role) VALUES ("Administrator"), ("Member"), ("Non-member"), ("Volunteer");

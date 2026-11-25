@@ -46,6 +46,7 @@ const Events = () => {
       lowerHubBackground: targetEvent.lower_hub_background_image_name,
       lowerHubEventImages: targetEvent.lower_hub_event_image_names,
       isPublished: false,
+      viewTemplate: targetEvent.view_template ?? "signature",
       createdBy: targetEvent.created_by,
       createdDateTime: Moment().format("YYYY-MM-DD HH:mm:ss"),
       modifiedBy: targetEvent.modified_by,
@@ -78,7 +79,7 @@ const handleDelete = (id) => {
       })
       .catch((error) => {
         console.log(error);
-        alert("Failed to delete event. Please try again.");
+        alert(error.response?.data?.Error || "Failed to delete event. Please try again.");
       });
   }
 };

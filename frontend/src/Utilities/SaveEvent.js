@@ -19,11 +19,13 @@ export async function saveEvent({ details, products, id }, client = Axios) {
   }
   if (!id && products.length === 0) return result;
   const productPayload = products.map((product) => ({ ...product, eventURL: saved.url }));
+  const options = { headers: { "X-Product-Version": details.productsVersion ?? 1 } };
   try {
     const productResponse = id
-      ? await client.put(ServerLocation(`/auth/memberProducts/${encodeURIComponent(saved.url)}`), productPayload)
-      : await client.post(ServerLocation("/auth/memberProducts"), productPayload);
+      ? await client.put(ServerLocation(`/auth/memberProducts/${encodeURIComponent(saved.url)}`), productPayload, options)
+      : await client.post(ServerLocation("/auth/memberProducts"), productPayload, options);
     if (!productResponse.data.Status) throw new Error(productResponse.data.Error || "Product save failed.");
+    if (productResponse.data.Result) result.productReceipt = productResponse.data.Result;
   } catch (error) {
     result.warning = `Event saved, but products were not saved: ${error.response?.data?.Error || error.message}`;
   }

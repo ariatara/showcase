@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { replaceMemberProducts } from "../Utilities/MemberProductWrites.js";
 
-test("replaceMemberProducts removes all products on an explicit empty list without an empty INSERT", async () => {
+test("replaceMemberProducts retires all products on an explicit empty list without an empty INSERT", async () => {
   const queries = [];
   const db = {
     async beginTransaction() { queries.push("BEGIN"); },
@@ -10,8 +10,9 @@ test("replaceMemberProducts removes all products on an explicit empty list witho
     async commit() { queries.push("COMMIT"); },
     async rollback() { assert.fail("Must not roll back success"); },
   };
-  assert.equal(await replaceMemberProducts(db, "fair", []), 0);
-  assert.ok(queries.some((sql) => sql.startsWith("DELETE")));
+  assert.deepEqual((await replaceMemberProducts(db, "fair", [])).products, []);
+  assert.ok(queries.some((sql) => sql.startsWith("UPDATE member_products SET active")));
+  assert.ok(!queries.some((sql) => sql.startsWith("DELETE")));
   assert.ok(!queries.some((sql) => sql.startsWith("INSERT")));
   assert.equal(queries.at(-1), "COMMIT");
 });
@@ -22,7 +23,7 @@ test("replaceMemberProducts rolls back a failed replacement and ignores client e
     async beginTransaction() { return true; },
     async query(sql, values) {
       if (sql.startsWith("INSERT")) {
-        assert.equal(values[0][0][6], "fair");
+        assert.equal(values[6], "fair");
         throw new Error("Invalid product type");
       }
       return [[{ id: 1 }]];

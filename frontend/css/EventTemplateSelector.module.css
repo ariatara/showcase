@@ -1,0 +1,16 @@
+.selector { border: 1px solid #6c757d; padding: 12px; margin: 10px 0; min-width: 0; }
+.options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.card { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 12px; border: 2px solid #59626c; border-radius: 8px; min-width: 0; }
+.card:has(input:checked) { border-color: #ff985c; background: #32261f; }
+.card:has(input:focus-visible) { outline: 3px solid #ffbd96; outline-offset: 3px; }
+.card input { margin-top: 8px; accent-color: #ff985c; }
+.card > span { flex: 1; min-width: 0; }
+.card strong { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; }
+.card small { font-size: .7rem; color: #15191e; background: #ffb487; padding: 2px 7px; border-radius: 3px; }
+.description { display: block; margin-top: 6px; font-size: .85rem; color: #d5dae0; }
+.illustration { height: 80px; display: grid; gap: 5px; padding: 7px; background: #14191e; border-radius: 5px; }
+.illustration i { background: #46525d; border-radius: 3px; }
+.signature i:first-child { background: linear-gradient(110deg,#303a46,#ab653c); height: 35px; }
+.classic { background: #a14526; }
+.classic i { background: #282321; }
+@media(max-width:600px) { .options { grid-template-columns: 1fr; } }

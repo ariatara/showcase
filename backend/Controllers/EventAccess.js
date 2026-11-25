@@ -1,6 +1,7 @@
 import {
   EVENT_FIELDS, normalizeEventPayload, validateEvent, validateDraft, validatePublish,
 } from "../Utilities/EventValidation.js";
+import { DEFAULT_EVENT_TEMPLATE } from "../Utilities/EventTemplates.js";
 
 function databaseError(response, error, action) {
   console.error(`${action} event failed:`, error.code);
@@ -39,7 +40,7 @@ function fromRow(row) {
   for (const [key, [column]] of Object.entries(EVENT_FIELDS)) {
     const value = row[column];
     // mysql2 returns DATE columns as local Date objects unless dateStrings is enabled.
-    event[key] = value instanceof Date
+    event[key] = key === "viewTemplate" && value == null ? DEFAULT_EVENT_TEMPLATE : value instanceof Date
       ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
       : value;
   }
@@ -50,7 +51,7 @@ export function createEventHandlers(db) {
   function createEventAdminAccess(request, response) {
     let event;
     try {
-      event = { isPublished: false, ...normalizeEventPayload(request.body) };
+      event = { isPublished: false, viewTemplate: DEFAULT_EVENT_TEMPLATE, ...normalizeEventPayload(request.body) };
     } catch (error) {
       return response.status(400).json({ Status: false, Error: error.message });
     }
@@ -91,7 +92,8 @@ export function createEventHandlers(db) {
   }
 
   function readEvent(request, response, publishedOnly) {
-    const sql = "SELECT * FROM events WHERE url = ?" + (publishedOnly ? " AND published = TRUE" : "");
+    const sql = "SELECT *, DATE_FORMAT(start_date, '%Y-%m-%d') AS start_date, DATE_FORMAT(end_date, '%Y-%m-%d') AS end_date FROM events WHERE url = ?" +
+      (publishedOnly ? " AND published = TRUE" : "");
     db.query(sql, [request.params.event_url], (error, rows) => {
       if (error) return databaseError(response, error, "Get");
       if (!rows.length) return response.status(404).json({ Status: false, Error: "Event not found." });

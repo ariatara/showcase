@@ -1,4 +1,5 @@
 import { useState } from "react";
+import EventTemplateSelector from "./EventTemplateSelector";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useNavigate } from "react-router-dom";
@@ -14,11 +15,13 @@ export const CreateEvent = () => {
   const NavigateTo = useNavigate();
   const [savedId, setSavedId] = useState();
   const [saving, setSaving] = useState(false);
+  const [productReceipt, setProductReceipt] = useState();
   const [uploading, setUploading] = useState(0);
   const [pendingUploads, setPendingUploads] = useState({});
 
   const [eventDetails, setEventDetails] = useState({
     pageTitle: "",
+    viewTemplate: "signature",
     eventTitle: "",
     startDate: "",
     startTime: "",
@@ -90,6 +93,10 @@ export const CreateEvent = () => {
     try {
       const result = await saveEvent({ details: eventDetails, products: productDetails, id: savedId });
       setSavedId(result.id);
+      if (result.productReceipt) {
+        setProductReceipt(result.productReceipt);
+        setEventDetails((current) => ({ ...current, productsVersion: result.productReceipt.version }));
+      }
       const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
       if (result.warning || pending) {
         alert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
@@ -109,6 +116,8 @@ export const CreateEvent = () => {
     <fieldset className={eventStyle.createEvent} disabled={saving || uploading > 0}>
       <div className={eventStyle.eventContent}>
         <h4>Create Event:</h4>
+        <EventTemplateSelector value={eventDetails.viewTemplate} disabled={saving || uploading > 0}
+          onChange={(viewTemplate) => setEventDetails((current) => ({ ...current, viewTemplate }))} />
         <div className="input-group mb-3">
           <span className="input-group-text" id="basic-addon1">
             Page Title
@@ -382,6 +391,7 @@ export const CreateEvent = () => {
           onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, lowerHubEventImages: pending }))} />
         <section className={eventStyle.textInputContainer}>
           <AddMemberProduct
+            productReceipt={productReceipt}
             setProductDetails={setProductDetails}
           ></AddMemberProduct>
         </section>

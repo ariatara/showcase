@@ -17,6 +17,7 @@ test("create saves only draft identity, returns its ID, and defaults to unpublis
   const db = { query(sql, values, callback) {
     assert.match(sql, /INSERT INTO events/);
     assert.equal(values[0].published, false);
+    assert.equal(values[0].view_template, "signature");
     assert.equal(values[0].start_date, undefined);
     callback(null, { insertId: 9 });
   } };
@@ -56,6 +57,7 @@ test("update merges omitted values but explicitly clears fields when unpublishin
     assert.equal(values[0].event_title, null);
     assert.equal(values[0].published, false);
     assert.equal(Object.hasOwn(values[0], "page_title"), false);
+    assert.equal(Object.hasOwn(values[0], "view_template"), false);
     callback(null, { affectedRows: 1 });
   } }).updateEventAdminAccess;
   const failed = await invoke(handler, { eventTitle: "" }, { id: "1" });

@@ -18,6 +18,8 @@ const enabled = process.env.EVENT_TEST_MYSQL === "1";
 const bootstrap = await readFile(new URL("../../datastore/Schema/BackendSchema.mysql.sql", import.meta.url), "utf8");
 const migration = await readFile(new URL("../../datastore/Migrations/001_events_partial_save.mysql.sql", import.meta.url), "utf8");
 const oldEvents = await readFile(new URL("./Fixtures/EventsBeforePartialSave.mysql.sql", import.meta.url), "utf8");
+const templateMigration = await readFile(new URL("../../datastore/Migrations/002_event_templates.mysql.sql", import.meta.url), "utf8");
+const commerceMigration = await readFile(new URL("../../datastore/Migrations/003_event_commerce.mysql.sql", import.meta.url), "utf8");
 
 async function runScript(db, script, database) {
   const scoped = script.replaceAll("showcase.", `\`${database}\`.`)
@@ -77,6 +79,8 @@ for (const upgrade of [false, true]) {
       }
 
       const handlers = createEventHandlers(connection);
+      if (upgrade) await runScript(db, templateMigration, database);
+      await runScript(db, commerceMigration, database);
       const app = Express();
       app.use(Express.json());
       app.use(CookieParser());
@@ -123,6 +127,7 @@ for (const upgrade of [false, true]) {
         bannerBackground: "banner.jpg", isPublished: true };
       assert.equal((await request(`/events/${id}`, "PUT", full)).Status, true);
       assert.equal((await request("/public/events/fair")).code, 200);
+      assert.equal((await request("/public/events/fair")).Result[0].start_date, "2026-04-01");
       const galleryPaths = Array.from({ length: 10 }, (_, i) => `gallery_${i}.jpg`);
       for (const field of ["upperHubEventImages", "lowerHubEventImages"]) {
         const column = field === "upperHubEventImages" ? "upper_hub_event_image_names" : "lower_hub_event_image_names";
@@ -167,7 +172,9 @@ for (const upgrade of [false, true]) {
       const [[renamed]] = await db.query("SELECT event_url FROM member_products");
       assert.equal(renamed.event_url, "renamed_fair");
       await replaceMemberProducts(db, "renamed_fair", []);
-      const [[empty]] = await db.query("SELECT COUNT(*) AS count FROM member_products");
+      const [[empty]] = await db.query("SELECT COUNT(*) AS count FROM member_products WHERE active=TRUE");
       assert.equal(empty.count, 0);
+      const [[retained]] = await db.query("SELECT COUNT(*) AS count FROM member_products");
+      assert.equal(retained.count, 1);
     });
 }

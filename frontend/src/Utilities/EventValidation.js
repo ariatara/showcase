@@ -1,6 +1,8 @@
 import { GALLERY_FIELDS, parseEventImagePaths, serializeEventImagePaths } from "./EventImages.js";
+import { DEFAULT_EVENT_TEMPLATE, EVENT_TEMPLATES } from "./EventTemplates.js";
 
 const fieldColumns = {
+  viewTemplate: "view_template",
   pageTitle: "page_title", eventURL: "url", eventTitle: "event_title",
   startDate: "start_date", startTime: "start_time", endDate: "end_date",
   endTime: "end_time", venueAddress: "venue_address", mapLink: "map_link",
@@ -21,6 +23,12 @@ export function prepareEventPayload(details) {
   const payload = {};
   for (const key of Object.keys(fieldColumns)) {
     let value = details[key];
+    if (key === "viewTemplate") {
+      if (!Object.hasOwn(details, key)) continue;
+      if (!EVENT_TEMPLATES.some((template) => template.id === value)) {
+        throw new Error("Select an available Event View template.");
+      }
+    }
     if (GALLERY_FIELDS.includes(key)) {
       if (Object.hasOwn(details, key)) {
         payload[key] = serializeEventImagePaths(Array.isArray(value) ? value : parseEventImagePaths(value));
@@ -44,9 +52,9 @@ export function missingEventFields(payload) {
 }
 
 export function eventFromRow(row) {
-  const details = { eventId: row.id, isPublished: row.published === true || row.published === 1 };
+  const details = { eventId: row.id, productsVersion: row.products_version ?? 1, isPublished: row.published === true || row.published === 1 };
   for (const [key, column] of Object.entries(fieldColumns)) {
-    details[key] = row[column] ?? "";
+    details[key] = row[column] ?? (key === "viewTemplate" ? DEFAULT_EVENT_TEMPLATE : "");
   }
   details.startDate = details.startDate.slice(0, 10);
   details.endDate = details.endDate.slice(0, 10);
@@ -59,8 +67,11 @@ export function completeProducts(products) {
       (key) => typeof product[key] === "string" && product[key].trim()
     )) return false;
     const date = new Date(`${product.eventDate}T00:00:00Z`);
-    return Number.isFinite(Number(product.productPrice)) && Number(product.productPrice) > 0 &&
-      Number.isInteger(Number(product.productInventory)) && Number(product.productInventory) > 0 &&
+    return /^\d{1,10}(\.\d{1,2})?$/.test(String(product.productPrice)) && Number(product.productPrice) > 0 &&
+      String(product.productInventory).trim() !== "" &&
+      Number.isInteger(Number(product.productInventory)) && Number(product.productInventory) >= 0 &&
+      (product.productId == null || (Number.isSafeInteger(product.productId) && product.productId > 0 &&
+        Number.isSafeInteger(product.version) && product.version > 0)) &&
       !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === product.eventDate &&
       (product.productImage == null || typeof product.productImage === "string");
   });

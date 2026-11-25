@@ -48,7 +48,7 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
       upper_hub_content: "Upper hub text", lower_hub_content: "Lower hub text",
       upper_hub_event_image_names: paths("upper", upper).join(",") || null,
       lower_hub_event_image_names: paths("lower", lower).join(",") || null,
-      published: 1,
+      published: 1, view_template: "classic", products_version: 1,
     },
     writes: [], uploadAttempts: [], uploadNames: [], failUploads: new Set(), failSave: false, uploadGate: null,
   };
@@ -66,7 +66,7 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
     const method = route.request().method();
     if (method === "OPTIONS") return route.fulfill({
       status: 204, headers: { "Access-Control-Allow-Origin": "http://127.0.0.1:5174",
-        "Access-Control-Allow-Credentials": "true", "Access-Control-Allow-Headers": "content-type",
+        "Access-Control-Allow-Credentials": "true", "Access-Control-Allow-Headers": "content-type,x-product-version,x-commerce-csrf",
         "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS" },
     });
     if (path.startsWith("/Uploads/")) {
@@ -90,6 +90,7 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
       state.writes.push({ method, payload });
       if (state.failSave) return route.fulfill({ status: 500, json: { Status: false, Error: "Event save unavailable." } });
       const columns = {
+        viewTemplate: "view_template",
         pageTitle: "page_title", eventTitle: "event_title", eventURL: "url",
         upperHubEventImages: "upper_hub_event_image_names", lowerHubEventImages: "lower_hub_event_image_names",
         upperHubBackground: "upper_hub_background_image_name", lowerHubBackground: "lower_hub_background_image_name",
@@ -108,6 +109,11 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
       return route.fulfill({ json: { Status: true, Result: [state.row] } });
     }
     if (path === "/auth/events") return route.fulfill({ json: { Status: true, Result: [state.row] } });
+    if (path === "/account/commerce/context") return route.fulfill({ status: 401, json: { Status: false, Error: "Sign in to purchase." } });
+    if (path.startsWith("/auth/memberProducts") && method === "PUT") {
+      state.row.products_version++;
+      return route.fulfill({ json: { Status: true, Result: { products: [], version: state.row.products_version } } });
+    }
     if (["/auth/productTypes", "/auth/membershipCategories"].includes(path) || path.startsWith("/auth/memberProducts")) {
       return route.fulfill({ json: { Status: true, Result: [] } });
     }

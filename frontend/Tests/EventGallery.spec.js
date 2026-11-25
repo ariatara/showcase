@@ -19,7 +19,7 @@ for (const [width, columns] of [[390, 1], [768, 2], [1440, 3]]) {
       const tile = gallery.locator("..");
       expect(await tile.evaluate((element) => getComputedStyle(element, "::before").backgroundColor))
         .toBe("rgba(255, 69, 0, 0.5)");
-      const text = page.getByText(`${hub} text`, { exact: true }).locator("..");
+      const text = page.locator(`[class*="event${hub.split(" ")[0]}Content"]`);
       await expect(text).toHaveCSS("background-color", "rgba(0, 0, 0, 0.7)");
       for (const thumbnail of await grid.locator("img").all()) {
         await thumbnail.scrollIntoViewIfNeeded();

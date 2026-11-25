@@ -6,8 +6,15 @@ const AccountRoles = () => {
   const { account_email } = useParams();
 
   const [accountRoles, setAccountRoles] = useState([]);
+  const [account, setAccount] = useState();
+  const [detailsError, setDetailsError] = useState("");
   useEffect(() => {
-    Axios.get("http://localhost:3000/auth/accountRoles/" + account_email)
+    const controller = new AbortController();
+    const email = encodeURIComponent(account_email);
+    setAccountRoles([]);
+    setAccount(undefined);
+    setDetailsError("");
+    Axios.get("http://localhost:3000/auth/accountRoles/" + email, { signal: controller.signal })
       .then((result) => {
         if (result.data.Status) {
           setAccountRoles(result.data.Result);
@@ -15,8 +22,24 @@ const AccountRoles = () => {
           alert(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
-  }, []);
+      .catch((error) => { if (!controller.signal.aborted) console.log(error); });
+    Axios.get("http://localhost:3000/account/accountDetails/" + email, { signal: controller.signal })
+      .then((result) => {
+        if (!result.data.Status) {
+          setDetailsError(result.data.Error || "Unable to load account details. Please try again.");
+        } else if (!result.data.Result?.[0]) {
+          setDetailsError("Account not found.");
+        } else {
+          setAccount(result.data.Result[0]);
+        }
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setDetailsError(error.response?.data?.Error || "Unable to load account details. Please try again.");
+        }
+      });
+    return () => controller.abort();
+  }, [account_email]);
 
   const handleDelete = (id) => {
     Axios.delete("http://localhost:3000/auth/deleteAccountRole/" + id).then(
@@ -41,7 +64,19 @@ const AccountRoles = () => {
       >
         Add Account Role
       </Link>
-      <div className="mt-3">
+      <section aria-label="Account details" className="mt-5 p-0 text-white">
+        {detailsError ? <p role="alert">{detailsError}</p> : account ? (
+          <dl className="row mb-0">
+            <dt className="col-sm-3">First Name</dt>
+            <dd className="col-sm-9">{account.first_name}</dd>
+            <dt className="col-sm-3">Last Name</dt>
+            <dd className="col-sm-9">{account.last_name}</dd>
+            <dt className="col-sm-3">Email Address</dt>
+            <dd className="col-sm-9 text-break mb-0">{account.account_email}</dd>
+          </dl>
+        ) : <p role="status">Loading account details...</p>}
+      </section>
+      <div className="mt-5">
         <table className="table">
           <thead>
             <tr>

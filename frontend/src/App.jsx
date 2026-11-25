@@ -42,6 +42,7 @@ import { CreatePage } from "./Components/AdminAccess/CreatePage";
 import { EditEvent } from "./Components/AdminAccess/EditEvent";
 import ProductTypes from "./Components/AdminAccess/ProductTypes";
 import AddProductType from "./Components/AdminAccess/AddProductType";
+import CommerceSettings from "./Components/AdminAccess/CommerceSettings";
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
         <Route path="pages/:page_url" element={<ViewPage />}></Route>
         <Route path="shoppingArea" element={<ShoppingArea />}></Route>
         <Route path="shoppingCheckout" element={<ShoppingCheckout />}></Route>
+        <Route path="orders/:id" element={<ShoppingCheckout />}></Route>
 
         <Route
           path="/adminDashboard"
@@ -83,6 +85,7 @@ function App() {
             element={<AddMembershipPrice />}
           ></Route>
           <Route path="productTypes" element={<ProductTypes />}></Route>
+          <Route path="commerce" element={<CommerceSettings />}></Route>
           <Route path="addProductType" element={<AddProductType />}></Route>
           <Route path="editAccount/:id" element={<EditAccount />}></Route>
           <Route path="accounts" element={<Accounts />}></Route>

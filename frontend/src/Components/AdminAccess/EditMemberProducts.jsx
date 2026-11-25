@@ -10,7 +10,7 @@ import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
 
-const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => {
+const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, productReceipt }) => {
   const [productTypes, setProductTypes] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -77,7 +77,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => 
           .required("Price is required"),
         productInventory: Yup.number()
           .typeError("Inventory must be a number")
-          .positive("Inventory must be a positive number")
+          .min(0, "Inventory cannot be negative")
           .required("Inventory is required")
           .integer("Inventory must be an integer"),
         eventDate: Yup.date()
@@ -122,6 +122,8 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => 
         if (!active) return;
         if (response.data.Status) {
           const mappedProducts = response.data.Result.map((item) => ({
+            productId: item.id,
+            version: item.version,
             productName: item.name || "",
             productType: item.type || "",
             productImage: item.image_name || "",
@@ -149,6 +151,13 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => 
     const subscription = watch((values) => setProductDetails(values.products ?? []));
     return () => subscription.unsubscribe();
   }, [loaded, watch, setProductDetails]);
+
+  useEffect(() => {
+    productReceipt?.products.forEach((product, index) => {
+      setValue(`products.${index}.productId`, product.productId);
+      setValue(`products.${index}.version`, product.version);
+    });
+  }, [productReceipt, setValue]);
 
   if (loadError) return <p role="alert">Products could not be loaded: {loadError}</p>;
   if (!loaded) return <p>Loading products...</p>;
@@ -375,6 +384,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload }) => 
 };
 
 EditMemberProduct.propTypes = {
+  productReceipt: PropTypes.shape({ products: PropTypes.array.isRequired }),
   eventURL: PropTypes.string.isRequired,
   setProductDetails: PropTypes.func.isRequired,
   onMissingUpload: PropTypes.func.isRequired,

@@ -1,4 +1,5 @@
 import Axios from "axios";
+import EventTemplateSelector from "./EventTemplateSelector";
 import { useEffect, useRef, useState } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -36,6 +37,7 @@ export const EditEvent = () => {
 
   const { event_url } = useParams();
   const [saving, setSaving] = useState(false);
+  const [productReceipt, setProductReceipt] = useState();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [uploading, setUploading] = useState(0);
@@ -139,6 +141,10 @@ export const EditEvent = () => {
     setSaving(true);
     try {
       const result = await saveEvent({ details: eventDetails, products: productDetails, id: eventDetails.eventId });
+      if (result.productReceipt) {
+        setProductReceipt(result.productReceipt);
+        setEventDetails((current) => ({ ...current, productsVersion: result.productReceipt.version }));
+      }
       const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
       if (result.warning || pending) {
         alert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
@@ -159,6 +165,8 @@ export const EditEvent = () => {
     <fieldset className={eventStyle.createEvent} disabled={saving || uploading > 0}>
       <div className={eventStyle.eventContent}>
         <h4>Edit Event:</h4>
+        <EventTemplateSelector value={eventDetails.viewTemplate} disabled={saving || uploading > 0}
+          onChange={(viewTemplate) => setEventDetails((current) => ({ ...current, viewTemplate }))} />
         <div className="input-group mb-2">
           <span className="input-group-text" id="basic-addon1">
             Page Title
@@ -453,6 +461,7 @@ export const EditEvent = () => {
         <fieldset className={eventStyle.textInputContainer}>
           <legend className={eventStyle.boxHeading}><span className="h6">Member Products:</span></legend>
           <EditMemberProducts
+            productReceipt={productReceipt}
             eventURL={event_url}
             setProductDetails={setProductDetails}
             onMissingUpload={showUploadWarning}

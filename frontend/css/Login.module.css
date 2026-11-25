@@ -23,6 +23,17 @@
   cursor: grab;
 }
 
+.registrationPage {
+  min-height: 100vh;
+  padding: 100px 16px 64px;
+  background: #212529;
+}
+
+.loginForm.registrationForm {
+  width: min(28rem, 100%);
+  cursor: auto;
+}
+
 .loginNotification {
   width: min(26rem, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);

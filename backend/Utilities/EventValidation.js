@@ -1,7 +1,10 @@
+import { EVENT_TEMPLATE_IDS } from "./EventTemplates.js";
+
 export const GALLERY_FIELDS = ["upperHubEventImages", "lowerHubEventImages"];
 export const MAX_GALLERY_IMAGES = 10;
 
 export const EVENT_FIELDS = {
+  viewTemplate: ["view_template", "Event View template", 64],
   pageTitle: ["page_title", "Page title", 64],
   eventURL: ["url", "URL", 64],
   eventTitle: ["event_title", "Event title", 128],
@@ -35,6 +38,10 @@ export function normalizeEventPayload(body) {
   for (const [key, [, label]] of Object.entries(EVENT_FIELDS)) {
     if (!Object.hasOwn(body, key)) continue;
     const value = body[key];
+    if (key === "viewTemplate" && !EVENT_TEMPLATE_IDS.includes(value)) {
+      normalized[key] = value;
+      continue;
+    }
     if (value !== null && typeof value !== "string") {
       throw new Error(`${label} must be text.`);
     }
@@ -66,6 +73,9 @@ export function validatePublish(event) {
 
 export function validateEvent(event) {
   const errors = {};
+  if (Object.hasOwn(event, "viewTemplate") && !EVENT_TEMPLATE_IDS.includes(event.viewTemplate)) {
+    errors.viewTemplate = "Select an available Event View template.";
+  }
   const missing = event.isPublished ? validatePublish(event) : validateDraft(event);
   for (const key of missing) errors[key] = `${EVENT_FIELDS[key][1]} is required.`;
   for (const [key, [, label, max]] of Object.entries(EVENT_FIELDS)) {
