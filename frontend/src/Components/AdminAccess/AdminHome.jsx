@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import Axios from "axios";
 
@@ -96,8 +97,8 @@ export const AdminHome = () => {
               <tr key={x.id}>
                 <td>{x.account_email}</td>
                 <td>
-                  <button className="btn btn-custom btn-sm me-2">Edit</button>
-                  <button className="btn btn-danger btn-sm">Delete</button>
+                  <button className="btn btn-success btn-sm me-2"><ActionLabel action="edit">Edit</ActionLabel></button>
+                  <button className="btn btn-danger btn-sm"><ActionLabel action="delete">Delete</ActionLabel></button>
                 </td>
               </tr>
             ))}

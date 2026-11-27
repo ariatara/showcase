@@ -34,17 +34,16 @@ for (const assigned of [true, false]) test(`account identity appears above the t
   }
   const detailBounds = await details.boundingBox(), tableBounds = await page.getByRole("table").boundingBox();
   expect(detailBounds.y + detailBounds.height).toBeLessThanOrEqual(tableBounds.y);
-  const addButtonBounds = await page.getByRole("link", { name: "Add Account Role", exact: true }).boundingBox();
-  const firstNameBounds = await details.getByText("First Name", { exact: true }).boundingBox();
+  const addButtonBounds = await page.getByRole("link", { name: "Add Account Roles", exact: true }).boundingBox();
   const emailBounds = await details.getByText(account.account_email, { exact: true }).boundingBox();
   const lastNameBounds = await details.getByText(account.last_name, { exact: true }).boundingBox();
   const lineHeight = await details.evaluate((element) => parseFloat(getComputedStyle(element).lineHeight));
-  expect(firstNameBounds.y - addButtonBounds.y - addButtonBounds.height).toBeCloseTo(2 * lineHeight, 0);
+  expect(addButtonBounds.y).toBeGreaterThanOrEqual(tableBounds.y + tableBounds.height);
   expect(emailBounds.y - lastNameBounds.y - lastNameBounds.height).toBeLessThanOrEqual(8);
   expect(tableBounds.y - emailBounds.y - emailBounds.height).toBeCloseTo(2 * lineHeight, 0);
   await expect(page.getByRole("columnheader", { name: "Roles", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(roles.length);
-  await expect(page.getByRole("link", { name: "Add Account Role", exact: true })).toHaveAttribute("href", `/adminDashboard/addAccountRole/${account.account_email}`);
+  await expect(page.getByRole("link", { name: "Add Account Roles", exact: true })).toHaveAttribute("href", `/adminDashboard/addAccountRole/${account.account_email}`);
   await page.reload();
   await expect(details.getByText(account.first_name, { exact: true })).toBeVisible();
 });

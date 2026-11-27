@@ -1,3 +1,4 @@
+import ActionLabel from "../../ActionLabel";
 import PropTypes from "prop-types";
 import parse from "html-react-parser";
 import styles from "../../../../css/SignatureEventTemplate.module.css";
@@ -17,7 +18,7 @@ export default function SignatureEventTemplate({ event, memberProducts }) {
       <section className={styles.essentials} aria-label="Event details">
         <div><h2>Starts</h2><p>{eventDate(event.startDate)}<br />{eventTime(event.startTime)}</p></div>
         <div><h2>Ends</h2><p>{eventDate(event.endDate)}<br />{eventTime(event.endTime)}</p></div>
-        <div><h2>Venue</h2><p>{event.venueAddress}</p>{map && <a href={map}>View venue map</a>}</div>
+        <div><h2>Venue</h2><p>{event.venueAddress}</p>{map && <a href={map}><ActionLabel action="view">View venue map</ActionLabel></a>}</div>
       </section>
       {["upper", "lower"].map((hub) => {
         const content = event[`${hub}HubContent`], images = event[`${hub}HubEventImages`] || [], background = event[`${hub}HubBackground`];

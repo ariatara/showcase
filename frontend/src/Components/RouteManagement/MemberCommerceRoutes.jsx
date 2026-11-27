@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -22,7 +23,7 @@ export default function MemberCommerceRoutes({ children }) {
   if (state.error?.status === 401) return <p>Member products are available after you <Link
     to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`}>sign in</Link>.</p>;
   if (state.error?.status === 403) return <p>Membership is required to view products and purchase.</p>;
-  if (state.error) return <div role="alert">{state.error.message} <button type="button" onClick={() => setRefresh((value) => value + 1)}>Retry</button></div>;
+  if (state.error) return <div role="alert">{state.error.message} <button type="button" onClick={() => setRefresh((value) => value + 1)}><ActionLabel action="refresh">Retry</ActionLabel></button></div>;
   if (!state.data) return <p role="status">Checking member access...</p>;
   const setCart = (cart) => setState((current) => ({ data: { ...current.data, cartVersion: cart.version,
     cartCount: cart.lines.reduce((count, line) => count + line.quantity, 0) } }));

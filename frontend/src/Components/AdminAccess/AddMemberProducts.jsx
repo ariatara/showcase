@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import Axios from "axios";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -215,7 +216,7 @@ const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
                     }
                   }}
                 >
-                  Upload
+                  <ActionLabel action="upload">Upload</ActionLabel>
                 </button>
                 <p>{errors.products?.[index]?.productImage?.message}</p>
               </div>

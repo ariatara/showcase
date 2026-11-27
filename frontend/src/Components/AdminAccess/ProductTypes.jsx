@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
@@ -23,9 +24,9 @@ const ProductTypes = () => {
       </div>
       <Link
         to="/adminDashboard/addProductType"
-        className="btn btn-custom rounded-1"
+        className="btn btn-primary rounded-1"
       >
-        Add Product Type
+        <ActionLabel action="add">Add Product Type</ActionLabel>
       </Link>
       <div className="mt-3">
         <table className="table">
@@ -42,15 +43,15 @@ const ProductTypes = () => {
                 <td>
                   <Link
                     //to={"/adminDashboard/editEmployee/" + value.id}
-                    className="btn btn-info btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
                     className="btn btn-danger btn-sm"
                     //onClick={() => handleDelete(value.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

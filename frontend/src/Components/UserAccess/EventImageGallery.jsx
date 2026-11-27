@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { eventImageUrl } from "../../Utilities/EventImages";
@@ -91,7 +92,7 @@ export default function EventImageGallery({ imagePaths, eventTitle, hubLabel }) 
         }}>
         <div className={styles.toolbar}>
           <span>{hubLabel}</span>
-          <button type="button" ref={closeRef} onClick={close}>Close</button>
+          <button type="button" ref={closeRef} onClick={close}><ActionLabel action="cancel">Close</ActionLabel></button>
         </div>
         {activeIndex !== null && (
           <div className={styles.viewerImage}>
@@ -101,10 +102,10 @@ export default function EventImageGallery({ imagePaths, eventTitle, hubLabel }) 
         )}
         <div className={styles.controls}>
           {imagePaths.length > 1 && <button type="button" disabled={activeIndex === 0}
-            onClick={() => move(-1)}>Previous</button>}
+            onClick={() => move(-1)}><ActionLabel action="previous">Previous</ActionLabel></button>}
           <span aria-live="polite" aria-atomic="true">{(activeIndex ?? 0) + 1} / {imagePaths.length}</span>
           {imagePaths.length > 1 && <button type="button" disabled={activeIndex === imagePaths.length - 1}
-            onClick={() => move(1)}>Next</button>}
+            onClick={() => move(1)}><ActionLabel action="next">Next</ActionLabel></button>}
         </div>
       </dialog>
     </section>

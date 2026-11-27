@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useRef, useState } from "react";
 import Axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -217,7 +218,7 @@ const AccountLogin = () => {
                   !hasAcceptedAgreement
                 }
               >
-                Sign In
+                <ActionLabel action="login">Sign In</ActionLabel>
               </button>
             </div>
             <Link
@@ -242,7 +243,7 @@ const AccountLogin = () => {
         <p id="login-notification-message">Wrong username or password</p>
         <form method="dialog" className="mt-4">
           <button type="submit" className={loginStyle.loginButton} autoFocus>
-            OK
+            <ActionLabel action="confirm">OK</ActionLabel>
           </button>
         </form>
       </dialog>

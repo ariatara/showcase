@@ -21,6 +21,7 @@ import AddAccountRole from "./Components/AdminAccess/AddAccountRole";
 import AccountDashboard from "./Components/AccountAccess/AccountDashboard";
 import AccountHome from "./Components/AccountAccess/AccountHome";
 import RegisterMember from "./Components/AccountAccess/RegisterMember";
+import EditMember from "./Components/AccountAccess/EditMember";
 
 import AccountRoutes from "./Components/RouteManagement/AccountRoutes";
 import AdminRoutes from "./Components/RouteManagement/AdminRoutes";
@@ -115,6 +116,7 @@ function App() {
         >
           <Route path="" element={<AccountHome />}></Route>
           <Route path="registerMember" element={<RegisterMember />}></Route>
+          <Route path="editMember/:id" element={<EditMember />}></Route>
         </Route>
       </Routes>
       <FooterBar />

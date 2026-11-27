@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
@@ -63,15 +64,15 @@ const Members = () => {
                 <td>
                   <Link
                     //to={"/adminDashboard/editMember/" + member.id}
-                    className="btn btn-info btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
-                    className="btn btn-warning btn-sm"
+                    className="btn btn-danger btn-sm"
                     //onClick={() => handleDelete(member.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

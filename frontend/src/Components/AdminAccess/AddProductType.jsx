@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
@@ -37,8 +38,8 @@ const AddProductType = () => {
               onChange={(event) => setProductType(event.target.value)}
             />
           </div>
-          <button className="btn btn-custom w-100 rounded-1 mb-1">
-            Add Product Type
+          <button className="btn btn-primary w-100 rounded-1 mb-1">
+            <ActionLabel action="add">Add Product Type</ActionLabel>
           </button>
         </form>
       </div>

@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { eventImageUrl, MAX_GALLERY_IMAGES } from "../../Utilities/EventImages";
@@ -113,7 +114,7 @@ export default function EventImageEditor({ fieldName, label, imagePaths, onChang
         onClick={() => { move(index, index + 1); setError(""); }}>
         <i className="bi bi-arrow-right" aria-hidden="true" />
       </button>
-      <button type="button" aria-label={`Remove ${name}`} title="Remove"
+      <button type="button" className="btn btn-danger" aria-label={`Remove ${name}`} title="Remove"
         onClick={() => { remove(); setError(""); }}>
         <i className="bi bi-trash" aria-hidden="true" />
       </button>
@@ -136,7 +137,7 @@ export default function EventImageEditor({ fieldName, label, imagePaths, onChang
           aria-describedby={`${fieldName}-help`} onChange={selectImages} />
         <button type="button" className="btn btn-outline-secondary" onClick={uploadImages}
           disabled={queue.length === 0} aria-label={retry ? "Retry upload" : "Upload selected images"}>
-          {busy ? "Uploading..." : retry ? "Retry upload" : "Upload"}
+          <ActionLabel action={retry ? "refresh" : "upload"}>{busy ? "Uploading..." : retry ? "Retry upload" : "Upload"}</ActionLabel>
         </button>
       </div>
       <span className={styles.count} aria-live="polite">{total} / {MAX_GALLERY_IMAGES}</span>

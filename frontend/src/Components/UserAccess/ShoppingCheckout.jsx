@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import MemberCommerceRoutes from "../RouteManagement/MemberCommerceRoutes";
@@ -38,19 +39,19 @@ function Checkout() {
     }
   };
   if (context.pendingOrderId) return <p>An earlier checkout is unresolved. <Link
-    to={`/shoppingCheckout?order=${context.pendingOrderId}`}>Open pending order</Link>.</p>;
+    to={`/shoppingCheckout?order=${context.pendingOrderId}`}><ActionLabel action="view">Open pending order</ActionLabel></Link>.</p>;
   return <section className={styles.panel}><h1>Review checkout</h1>
     <p>Review your members, products and final USD total before continuing to PayPal.</p>
     {error && <p role="alert" className={styles.error}>{error}</p>}
     <form onSubmit={review}><label>Coupon code<input value={coupon} maxLength={32} onChange={(event) => {
       setCoupon(event.target.value.toUpperCase()); setQuote(undefined);
-    }} disabled={busy} /></label><button disabled={busy}>Review total</button></form>
+    }} disabled={busy} /></label><button disabled={busy}><ActionLabel action="checkout">Review total</ActionLabel></button></form>
     {quote && <>{quote.cart.lines.map((line) => <p key={line.id}>{line.event_title}: {line.name} / {line.first_name} {line.last_name} / Quantity {line.quantity}</p>)}
       <OrderTotals amounts={quote.amounts} />
       {quote.coupon && <p>Applied coupon: {quote.coupon.code}</p>}
-      <button onClick={pay} disabled={busy || !context.paymentsEnabled}>{busy ? "Preparing payment..." : "Pay with PayPal"}</button></>}
+      <button onClick={pay} disabled={busy || !context.paymentsEnabled}><ActionLabel action="checkout">{busy ? "Preparing payment..." : "Pay with PayPal"}</ActionLabel></button></>}
     {!context.paymentsEnabled && <p>Purchasing is not enabled. No payment can be created.</p>}
-    <p><Link to="/shoppingArea">Back to cart</Link></p>
+    <p><Link to="/shoppingArea"><ActionLabel action="previous">Back to cart</ActionLabel></Link></p>
   </section>;
 }
 export default function ShoppingCheckout() {

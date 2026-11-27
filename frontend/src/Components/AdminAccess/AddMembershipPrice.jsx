@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
@@ -79,7 +80,7 @@ const AddMembershipPrice = () => {
             </select>
           </div>
           <button className="btn btn-success w-100 rounded-0 my-3">
-            Add Membership Price
+            <ActionLabel action="add">Add Membership Price</ActionLabel>
           </button>
         </form>
       </div>

@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
@@ -38,7 +39,7 @@ const AddRoleType = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 mb-1">
-            Add Role Type
+            <ActionLabel action="add">Add Role Type</ActionLabel>
           </button>
         </form>
       </div>

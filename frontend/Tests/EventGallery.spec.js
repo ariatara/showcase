@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { galleryFixture } from "./GalleryFixtures.js";
+import { expectActionIcon } from "./ActionIconAssertions.js";
 
 for (const [width, columns] of [[390, 1], [768, 2], [1440, 3]]) {
   test(`public galleries preserve ten images, styling, and ${columns} columns at ${width}px`, async ({ page }) => {
@@ -39,6 +40,9 @@ test("lightbox supports keyboard boundaries, focus containment, dismissal and in
   await first.click();
   const dialog = page.getByRole("dialog", { name: "Upper hub image viewer" });
   await expect(dialog).toBeVisible();
+  for (const [name, icon] of [["Close", "x-circle"], ["Previous", "arrow-left"], ["Next", "arrow-right"]]) {
+    await expectActionIcon(dialog.getByRole("button", { name, exact: true }), icon);
+  }
   await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
   await expect(dialog.getByRole("button", { name: "Previous" })).toBeDisabled();
   await expect(page.locator("body")).toHaveCSS("overflow", "hidden");

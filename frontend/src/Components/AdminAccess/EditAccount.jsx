@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Axios from "axios";
@@ -88,7 +89,7 @@ const EditAccount = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 my-3">
-            Edit Account
+            <ActionLabel action="edit">Edit Account</ActionLabel>
           </button>
         </form>
       </div>

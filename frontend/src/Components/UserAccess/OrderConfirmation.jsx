@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -57,11 +58,11 @@ export default function OrderConfirmation({ id, action }) {
       {order.items.map((item, index) => <p key={index}>{item.eventTitle}: {item.name} / {item.memberName} / {item.quantity} at {usd(item.unit_cents)}</p>)}
       <OrderTotals amounts={order.amounts} />
       {order.coupon && <p>Coupon: {order.coupon}</p>}
-      {order.status === "awaiting_approval" && order.approvalUrl && <button disabled={busy} onClick={resume}>Continue to PayPal</button>}
-      {order.status === "awaiting_approval" && <button disabled={busy} onClick={() => update("cancel")}>Cancel checkout</button>}
+      {order.status === "awaiting_approval" && order.approvalUrl && <button disabled={busy} onClick={resume}><ActionLabel action="checkout">Continue to PayPal</ActionLabel></button>}
+      {order.status === "awaiting_approval" && <button disabled={busy} onClick={() => update("cancel")}><ActionLabel action="cancel">Cancel checkout</ActionLabel></button>}
     </>}
-    <button disabled={busy} onClick={() => update(order && !finalStates.includes(order.status) ? "capture" : "")}>Refresh order status</button>
-    <Link to="/shoppingArea">Back to cart</Link>
+    <button disabled={busy} onClick={() => update(order && !finalStates.includes(order.status) ? "capture" : "")}><ActionLabel action="refresh">Refresh order status</ActionLabel></button>
+    <Link to="/shoppingArea"><ActionLabel action="previous">Back to cart</ActionLabel></Link>
   </section>;
 }
 OrderConfirmation.propTypes = { id: PropTypes.string.isRequired, action: PropTypes.string };

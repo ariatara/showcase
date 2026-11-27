@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import Axios from "axios";
 import EventTemplateSelector from "./EventTemplateSelector";
 import { useEffect, useRef, useState } from "react";
@@ -338,7 +339,7 @@ export const EditEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </fieldset>
@@ -382,7 +383,7 @@ export const EditEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
           {eventDetails.upperHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
@@ -440,7 +441,7 @@ export const EditEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
           {eventDetails.lowerHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
@@ -530,7 +531,7 @@ export const EditEvent = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleUpdate}
           >
-            {saving ? "Saving..." : "Save"}
+            <ActionLabel action="save">{saving ? "Saving..." : "Save"}</ActionLabel>
           </button>
         </fieldset>
       </div>
@@ -547,7 +548,7 @@ export const EditEvent = () => {
         <p id="upload-warning-message">Select a file before uploading.</p>
         <form method="dialog" className="mt-4">
           <button type="submit" className={loginStyle.loginButton} autoFocus>
-            OK
+            <ActionLabel action="confirm">OK</ActionLabel>
           </button>
         </form>
       </dialog>

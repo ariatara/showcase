@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectActionIcon } from "./ActionIconAssertions.js";
 import { galleryFixture, selectedImage } from "./GalleryFixtures.js";
 
 const upperEditor = (page) => page.getByRole("group", { name: /^Upper hub event images:?$/i });
@@ -35,6 +36,7 @@ test("edit gallery file pickers and upload buttons match the upper background co
   for (const editor of [upperEditor(page), lowerEditor(page)]) {
     const upload = editor.getByRole("button", { name: "Upload selected images", exact: true });
     await expect(upload).toBeVisible();
+    await expectActionIcon(upload, "upload");
     await expect(upload).toBeDisabled();
     await editor.getByLabel("Add images", { exact: true }).setInputFiles([
       selectedImage("first.png"), selectedImage("second.png"),
@@ -288,6 +290,7 @@ test("gallery image actions are compact single-row icons with accessible labels 
             const button = card.getByRole("button", { name, exact: true });
             await expect(button).toHaveText("");
             await expect(button).toHaveAttribute("title", title);
+            if (title === "Remove") await expect(button).toHaveCSS("background-color", "rgb(255, 0, 0)");
             const icon = button.locator('[aria-hidden="true"]');
             await expect(icon).toHaveCount(1);
             expect(await icon.evaluate((element) => getComputedStyle(element, "::before").content))
@@ -543,6 +546,7 @@ test("partial upload failure preserves successes, releases busy state and retrie
   expect(await upper.getByLabel("Add images", { exact: true }).evaluate((element) =>
     Array.from(element.files, (file) => file.name))).toEqual(["two.png", "three.png"]);
   await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
+  await expectActionIcon(upper.getByRole("button", { name: "Retry upload", exact: true }), "arrow-clockwise");
   await upper.getByRole("button", { name: "Retry upload", exact: true }).click();
   await expect(savedList(upper).getByRole("listitem")).toHaveCount(4);
   await expect(pendingList(upper)).toHaveCount(0);

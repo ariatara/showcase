@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import Axios from "axios";
 import { useEffect, useState, useCallback } from "react";
 import "react-quill/dist/quill.snow.css";
@@ -135,7 +136,7 @@ export const CreatePage = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </div>
@@ -193,7 +194,7 @@ export const CreatePage = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleSave}
           >
-            Save
+            <ActionLabel action="save">Save</ActionLabel>
           </button>
         </div>
       </div>

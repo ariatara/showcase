@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -15,7 +16,7 @@ function CartLine({ line, busy, change }) {
     <form className={styles.inline} onSubmit={(event) => { event.preventDefault(); change(line.id, Number(quantity)); }}>
       <label>Quantity for {line.name}<input type="number" min="1" max="99" value={quantity}
         onChange={(event) => setQuantity(event.target.value)} disabled={busy} required /></label>
-      <button disabled={busy}>Update</button><button type="button" disabled={busy} onClick={() => change(line.id)}>Remove</button>
+      <button disabled={busy}><ActionLabel action="save">Update</ActionLabel></button><button type="button" disabled={busy} onClick={() => change(line.id)}><ActionLabel action="delete">Remove</ActionLabel></button>
     </form>
   </article>;
 }
@@ -45,16 +46,16 @@ function Cart() {
     } finally { setBusy(false); }
   };
   return <>
-    {error && <p role="alert">{error} <button onClick={reload}>Reload cart</button></p>}
+    {error && <p role="alert">{error} <button onClick={reload}><ActionLabel action="refresh">Reload cart</ActionLabel></button></p>}
     {!cart && !error && <p>Loading cart...</p>}
     {cart && !cart.lines.length && <p>Your cart is empty.</p>}
     {cart && [...new Set(cart.lines.map((line) => line.event_url))].map((url) => <section className={styles.panel} key={url}>
       <h2>{cart.lines.find((line) => line.event_url === url).event_title}</h2>
-      <Link to={`/events/${encodeURIComponent(url)}`}>View event</Link>
+      <Link to={`/events/${encodeURIComponent(url)}`}><ActionLabel action="view">View event</ActionLabel></Link>
       {cart.lines.filter((line) => line.event_url === url).map((line) => <CartLine key={line.id} line={line} busy={busy} change={change} />)}
     </section>)}
-    {context.pendingOrderId ? <Link to={`/shoppingCheckout?order=${context.pendingOrderId}`}>Open pending order</Link> :
-      Boolean(cart?.lines.length) && !cart.lines.some((line) => line.issue) && <Link to="/shoppingCheckout">Review checkout</Link>}
+    {context.pendingOrderId ? <Link to={`/shoppingCheckout?order=${context.pendingOrderId}`}><ActionLabel action="view">Open pending order</ActionLabel></Link> :
+      Boolean(cart?.lines.length) && !cart.lines.some((line) => line.issue) && <Link to="/shoppingCheckout"><ActionLabel action="checkout">Review checkout</ActionLabel></Link>}
   </>;
 }
 export default function ShoppingArea() {

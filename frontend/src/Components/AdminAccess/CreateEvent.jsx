@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import EventTemplateSelector from "./EventTemplateSelector";
 import ReactQuill from "react-quill";
@@ -283,7 +284,7 @@ export const CreateEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </div>
@@ -329,7 +330,7 @@ export const CreateEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </div>
@@ -380,7 +381,7 @@ export const CreateEvent = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </div>
@@ -458,7 +459,7 @@ export const CreateEvent = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleSave}
           >
-            {saving ? "Saving..." : "Save"}
+            <ActionLabel action="save">{saving ? "Saving..." : "Save"}</ActionLabel>
           </button>
         </div>
       </div>

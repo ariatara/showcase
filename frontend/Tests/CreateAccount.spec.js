@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectActionIcon } from "./ActionIconAssertions.js";
 
 async function registrationPage(page, respond) {
   await page.route(/^https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|use\.fontawesome\.com)\//,
@@ -35,6 +36,7 @@ test("registration requires matching passwords and shows success only after crea
   await expect(mismatchDialog.getByText("Passwords do not match.", { exact: true })).toBeVisible();
   const dismiss = mismatchDialog.getByRole("button", { name: "OK", exact: true });
   await expect(dismiss).toBeFocused();
+  await expectActionIcon(dismiss, "check-circle");
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(requests).toHaveLength(0);
   await dismiss.click();
@@ -86,11 +88,13 @@ for (const width of [390, 1440]) test(`registration matches login styling on a p
   };
   const loginHeading = await page.getByRole("heading", { name: "Account Login", exact: true }).evaluate(appearance);
   const loginButton = await page.getByRole("button", { name: "Sign In", exact: true }).evaluate(appearance);
+  await expectActionIcon(page.getByRole("button", { name: "Sign In", exact: true }), "box-arrow-in-right");
   const loginInput = await page.getByPlaceholder("Enter Email", { exact: true }).evaluate(appearance);
   const loginRadius = await page.getByRole("heading", { name: "Account Login", exact: true }).locator("..").evaluate((element) => getComputedStyle(element).borderRadius);
   await page.goto("/createAccount");
   const heading = page.getByRole("heading", { name: "Create Account", exact: true });
   const card = heading.locator("..");
+  await expectActionIcon(page.getByRole("button", { name: "Create Account", exact: true }), "person-plus");
   await expect(page.getByRole("main")).toHaveCSS("background-image", "none");
   await expect(page.getByRole("main")).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await heading.evaluate(appearance)).toEqual(loginHeading);

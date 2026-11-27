@@ -91,10 +91,10 @@
   height: 32px;
   min-height: 32px;
   padding: 0;
-  border: 1px solid #999;
+  border: 1px solid var(--bs-btn-border-color, #999);
   border-radius: 6px;
-  color: white;
-  background: #383838;
+  color: var(--bs-btn-color, white);
+  background: var(--bs-btn-bg, #383838);
   font-size: 1rem;
 }
 
@@ -104,8 +104,8 @@
 }
 
 .actions button:hover:not(:disabled) {
-  background: #505050;
-  border-color: #ddd;
+  background: var(--bs-btn-hover-bg, #505050);
+  border-color: var(--bs-btn-hover-border-color, #ddd);
 }
 
 .actions button:disabled {

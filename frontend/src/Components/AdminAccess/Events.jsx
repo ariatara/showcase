@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
@@ -89,8 +90,8 @@ const handleDelete = (id) => {
       <div className="d-flex justify-content-center">
         <h4>Event List</h4>
       </div>
-      <Link to="/adminDashboard/addEvent" className="btn btn-custom">
-        Add Event
+      <Link to="/adminDashboard/addEvent" className="btn btn-primary">
+        <ActionLabel action="add">Create Event</ActionLabel>
       </Link>
       <div className="mt-3">
         <table className="table">
@@ -121,25 +122,25 @@ const handleDelete = (id) => {
                     to={"/events/" + encodeURIComponent(x.url)}
                     className="btn btn-custom btn-sm me-2"
                   >
-                    View
+                    <ActionLabel action="view">View</ActionLabel>
                   </Link>}
                   <Link
                     to={"/adminDashboard/editEvent/" + encodeURIComponent(x.url)}
-                    className="btn btn-custom btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
-                    className="btn btn-custom btn-sm me-2"
+                    className="btn btn-copy btn-sm me-2"
                     onClick={() => handleCopy(x.id)}
                   >
-                    Copy
+                    <ActionLabel action="copy">Copy</ActionLabel>
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(x.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

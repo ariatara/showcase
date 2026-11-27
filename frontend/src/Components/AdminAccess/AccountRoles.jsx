@@ -1,9 +1,11 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 
 const AccountRoles = () => {
   const { account_email } = useParams();
+  const { state } = useLocation();
 
   const [accountRoles, setAccountRoles] = useState([]);
   const [account, setAccount] = useState();
@@ -58,12 +60,7 @@ const AccountRoles = () => {
       <div className="d-flex justify-content-center">
         <h4>Account Roles</h4>
       </div>
-      <Link
-        to={"/adminDashboard/addAccountRole/" + account_email}
-        className="btn btn-primary"
-      >
-        Add Account Role
-      </Link>
+      {state?.memberRegisteredFor === account_email && <p role="status" className="text-white">Member registered and Member role assigned successfully.</p>}
       <section aria-label="Account details" className="mt-5 p-0 text-white">
         {detailsError ? <p role="alert">{detailsError}</p> : account ? (
           <dl className="row mb-0">
@@ -93,7 +90,7 @@ const AccountRoles = () => {
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(x.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>
@@ -101,6 +98,12 @@ const AccountRoles = () => {
           </tbody>
         </table>
       </div>
+      <Link
+        to={"/adminDashboard/addAccountRole/" + account_email}
+        className="btn btn-primary"
+      >
+        <ActionLabel action="add">Add Account Roles</ActionLabel>
+      </Link>
     </div>
   );
 };

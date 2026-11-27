@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
@@ -133,7 +134,7 @@ const CreateAccount = () => {
           </div>
           <div className="text-center">
             <button className={`${loginStyle.loginButton} my-2`} disabled={submitting}>
-              {submitting ? "Creating account..." : "Create Account"}
+              <ActionLabel action="register">{submitting ? "Creating account..." : "Create Account"}</ActionLabel>
             </button>
           </div>
         </form>}
@@ -151,7 +152,7 @@ const CreateAccount = () => {
         <p id="password-notification-message">Passwords do not match.</p>
         <form method="dialog" className="mt-4">
           <button type="submit" className={loginStyle.loginButton} autoFocus>
-            OK
+            <ActionLabel action="confirm">OK</ActionLabel>
           </button>
         </form>
       </dialog>

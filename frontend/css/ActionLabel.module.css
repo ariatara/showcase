@@ -1,0 +1,14 @@
+.content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.content > i {
+  flex: none;
+  font-size: 1em;
+  line-height: 1;
+}

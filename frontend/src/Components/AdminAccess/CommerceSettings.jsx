@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { commerceRequest } from "../../Utilities/CommerceApi";
 import styles from "../../../css/Commerce.module.css";
@@ -56,7 +57,7 @@ export default function CommerceSettings() {
     } catch (failure) { setError(failure.message); }
   };
   return <div className={styles.panel}><h1>Commerce settings</h1>
-    {error && <p role="alert">{error} <button onClick={load} disabled={busy}>Reload settings</button></p>}
+    {error && <p role="alert">{error} <button onClick={load} disabled={busy}><ActionLabel action="refresh">Reload settings</ActionLabel></button></p>}
     {message && <p role="status">{message}</p>}
     {!settings && !error && <p>Loading settings...</p>}
     {settings && <form onSubmit={saveFee}><fieldset disabled={busy}><legend>Payment fee</legend>
@@ -65,7 +66,7 @@ export default function CommerceSettings() {
       <label>Percentage (basis points)<input type="number" min="0" max="10000" step="1" required value={settings.fee_basis_points}
         onChange={(event) => setSettings({ ...settings, fee_basis_points: event.target.value })} /></label>
       <label>Fixed fee (USD cents)<input type="number" min="0" max="100000000" step="1" required value={settings.fee_fixed_cents}
-        onChange={(event) => setSettings({ ...settings, fee_fixed_cents: event.target.value })} /></label><button>Save payment fee</button>
+        onChange={(event) => setSettings({ ...settings, fee_fixed_cents: event.target.value })} /></label><button><ActionLabel action="save">Save payment fee</ActionLabel></button>
     </fieldset></form>}
     <form onSubmit={saveCoupon}><fieldset disabled={busy || !settings}><legend>{coupon.id ? "Edit coupon" : "New coupon"}</legend>
       <label>Code<input maxLength={32} pattern="[A-Za-z0-9_-]+" required value={coupon.code} onChange={(event) => setCoupon({ ...coupon, code: event.target.value.toUpperCase() })} /></label>
@@ -78,9 +79,9 @@ export default function CommerceSettings() {
       <label>Expires (local time)<input type="datetime-local" value={coupon.ends_at} onChange={(event) => setCoupon({ ...coupon, ends_at: event.target.value })} /></label>
       <label>Global usage limit (blank for unlimited)<input type="number" min="1" value={coupon.max_uses} onChange={(event) => setCoupon({ ...coupon, max_uses: event.target.value })} /></label>
       <label>Per-account limit (blank for unlimited)<input type="number" min="1" value={coupon.per_account} onChange={(event) => setCoupon({ ...coupon, per_account: event.target.value })} /></label>
-      <button>Save coupon</button>{coupon.id && <button type="button" onClick={() => setCoupon(emptyCoupon)}>New coupon</button>}
+      <button><ActionLabel action="save">Save coupon</ActionLabel></button>{coupon.id && <button type="button" onClick={() => setCoupon(emptyCoupon)}><ActionLabel action="add">New coupon</ActionLabel></button>}
     </fieldset></form>
-    <h2>Coupons</h2>{coupons.map((item) => <p key={item.id}><strong>{item.code}</strong> / {item.kind} / {item.amount} {item.kind === "percent" ? "basis points" : "cents"} / {item.active ? "Active" : "Inactive"} <button onClick={() => edit(item)} disabled={busy}>Edit {item.code}</button></p>)}
-    {next && <button onClick={more}>More coupons</button>}
+    <h2>Coupons</h2>{coupons.map((item) => <p key={item.id}><strong>{item.code}</strong> / {item.kind} / {item.amount} {item.kind === "percent" ? "basis points" : "cents"} / {item.active ? "Active" : "Inactive"} <button className="btn btn-success" onClick={() => edit(item)} disabled={busy}><ActionLabel action="edit">Edit {item.code}</ActionLabel></button></p>)}
+    {next && <button onClick={more}><ActionLabel action="next">More coupons</ActionLabel></button>}
   </div>;
 }

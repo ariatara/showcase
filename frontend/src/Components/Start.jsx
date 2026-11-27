@@ -1,3 +1,4 @@
+import ActionLabel from "./ActionLabel";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Axios from "axios";
@@ -32,7 +33,7 @@ const Start = () => {
               NavigateTo("/employeeLogin");
             }}
           >
-            Member
+            <ActionLabel action="roles">Member</ActionLabel>
           </button>
           <button
             type="button"
@@ -41,7 +42,7 @@ const Start = () => {
               NavigateTo("/adminLogin");
             }}
           >
-            Administrator
+            <ActionLabel action="roles">Administrator</ActionLabel>
           </button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
@@ -38,7 +39,7 @@ const AddMembershipCategory = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 mb-1">
-            Add Membership Category
+            <ActionLabel action="add">Add Membership Category</ActionLabel>
           </button>
         </form>
       </div>

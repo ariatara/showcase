@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { commerceFixture } from "./CommerceFixtures.js";
+import { expectActionIcon } from "./ActionIconAssertions.js";
 
 for (const access of ["guest", "nonmember"]) test(`${access} cannot see member products or prices`, async ({ page }) => {
   const state = await commerceFixture(page, { access });
@@ -14,6 +15,7 @@ test("member purchases across events through an authoritative confirmation", asy
   for (const [event, name] of [["gallery_event", "First ticket"], ["second", "Second ticket"]]) {
     await page.goto(`/events/${event}`);
     await page.getByLabel(`Member for ${name}`).selectOption("101");
+    await expectActionIcon(page.getByRole("button", { name: "Add to cart" }), "cart-plus");
     await page.getByRole("button", { name: "Add to cart" }).click();
     await expect(page.getByText("Added to cart.")).toBeVisible();
     if (event === "gallery_event") await page.screenshot({ path: testInfo.outputPath("member-storefront.png"), fullPage: true });
@@ -21,6 +23,9 @@ test("member purchases across events through an authoritative confirmation", asy
   await page.getByRole("link", { name: "View cart (2)" }).click();
   await expect(page.getByRole("heading", { name: "First event", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Second event", exact: true })).toBeVisible();
+  await expectActionIcon(page.getByRole("button", { name: "Update", exact: true }).first(), "floppy");
+  await expectActionIcon(page.getByRole("button", { name: "Remove", exact: true }).first(), "trash");
+  await expectActionIcon(page.getByRole("link", { name: "Review checkout" }), "credit-card");
   const headingContrast = await page.getByRole("heading", { name: "Your member cart" }).evaluate((heading) => {
     const luminance = (rgb) => rgb.map((value) => value / 255).map((value) =>
       value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
@@ -36,6 +41,8 @@ test("member purchases across events through an authoritative confirmation", asy
   await page.getByRole("link", { name: "Review checkout" }).click();
   await expect(page.getByText("$30.25", { exact: true })).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("checkout.png"), fullPage: true });
+  await expectActionIcon(page.getByRole("button", { name: "Pay with PayPal" }), "credit-card");
+  await expectActionIcon(page.getByRole("link", { name: "Back to cart" }), "arrow-left");
   await page.getByRole("button", { name: "Pay with PayPal" }).click();
   await expect(page.getByRole("heading", { name: "Payment confirmed" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("confirmation.png"), fullPage: true });
@@ -53,6 +60,7 @@ test("a pending return never displays payment success and can recover by refresh
   await expect(page.getByText("payment pending", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Payment confirmed" })).toHaveCount(0);
   state.captureStatus = "paid";
+  await expectActionIcon(page.getByRole("button", { name: "Refresh order status" }), "arrow-clockwise");
   await page.getByRole("button", { name: "Refresh order status" }).click();
   await expect(page.getByRole("heading", { name: "Payment confirmed" })).toBeVisible();
 });
@@ -101,6 +109,7 @@ test("administrators save a disclosed fee and a bounded fixed-USD coupon", async
   expect(writes[0].body).toMatchObject({ fee_enabled: true, fee_basis_points: 200, fee_fixed_cents: 30, version: 1 });
   expect(writes[1].body).toMatchObject({ kind: "fixed", amount: 300, max_uses: 10, per_account: 1 });
   expect(writes.every((write) => write.csrf === "admin-csrf")).toBe(true);
+  await expectActionIcon(page.getByRole("button", { name: "More coupons" }), "arrow-right");
   await page.getByRole("button", { name: "More coupons" }).click();
   await expect(page.getByRole("button", { name: "More coupons" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Edit WELCOME" })).toHaveCount(1);

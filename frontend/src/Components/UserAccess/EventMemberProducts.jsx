@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -33,7 +34,7 @@ function Product({ product }) {
       </select></label>
       <label>Quantity for {product.name}<input type="number" min="1" max={Math.min(99, product.available)} value={quantity}
         onChange={(event) => setQuantity(event.target.value)} required disabled={busy || !product.available} /></label>
-      <button disabled={busy || !product.available || !memberId}>{busy ? "Adding..." : "Add to cart"}</button></form>}
+      <button disabled={busy || !product.available || !memberId}><ActionLabel action="cart">{busy ? "Adding..." : "Add to cart"}</ActionLabel></button></form>}
     {message && <p role="status">{message}</p>}
   </article>;
 }
@@ -60,12 +61,12 @@ function Catalog({ eventURL }) {
     } catch (error) { if (!controller.signal.aborted) setState((current) => ({ ...current, error })); }
     finally { if (!controller.signal.aborted) setLoadingMore(false); }
   };
-  return <><Link to="/shoppingArea">View cart ({context.cartCount})</Link>
-    {state.error && <p role="alert">{state.error.message} <button onClick={() => setRefresh((value) => value + 1)}>Retry</button></p>}
+  return <><Link to="/shoppingArea"><ActionLabel action="view">View cart ({context.cartCount})</ActionLabel></Link>
+    {state.error && <p role="alert">{state.error.message} <button onClick={() => setRefresh((value) => value + 1)}><ActionLabel action="refresh">Retry</ActionLabel></button></p>}
     {!state.data && !state.error && <p>Loading member products...</p>}
     {state.data && (state.data.products.length ? <div className={styles.grid}>{state.data.products.map((product) =>
       <Product key={`${context.accountId}-${product.id}`} product={product} />)}</div> : <p>No member products are available for this event.</p>)}
-    {state.data?.next && <button onClick={more} disabled={loadingMore}>More products</button>}
+    {state.data?.next && <button onClick={more} disabled={loadingMore}><ActionLabel action="next">More products</ActionLabel></button>}
   </>;
 }
 Catalog.propTypes = { eventURL: PropTypes.string.isRequired };
