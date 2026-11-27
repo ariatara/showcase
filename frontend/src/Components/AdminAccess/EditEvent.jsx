@@ -7,7 +7,7 @@ import "react-quill/dist/quill.snow.css";
 import { useNavigate, useParams } from "react-router-dom";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import imageEditorStyle from "../../../css/EventImageEditor.module.css";
-import loginStyle from "../../../css/Login.module.css";
+import Popup from "../Popup";
 import { ServerLocation } from "../../Utilities/Locations";
 import EditMemberProducts from "./EditMemberProducts";
 import UploadedFileNames from "./UploadedFileNames";
@@ -18,6 +18,7 @@ import { EditorFontOptions, matchEditorFont } from "../QuillEditor/EditorFonts";
 import { eventImageUrl, parseEventImagePaths } from "../../Utilities/EventImages";
 import EventImageEditor from "./EventImageEditor";
 import EventImagePreview from "./EventImagePreview";
+import { usePopup } from "../../Utilities/usePopup";
 
 const eventEditorModules = {
   clipboard: {
@@ -34,6 +35,7 @@ const eventEditorModules = {
 };
 
 export const EditEvent = () => {
+  const { showAlert } = usePopup("Edit Event");
   const NavigateTo = useNavigate();
 
   const { event_url } = useParams();
@@ -114,7 +116,7 @@ export const EditEvent = () => {
       setEventDetails((current) => ({ ...current, [fieldName]: uploadedFileName }));
       setPendingUploads((current) => ({ ...current, [fieldName]: null }));
     } catch (error) {
-      alert(error.response?.data?.Error || error.message);
+      await showAlert(error.response?.data?.Error || error.message);
     } finally {
       setUploading((count) => count - 1);
     }
@@ -148,12 +150,12 @@ export const EditEvent = () => {
       }
       const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
       if (result.warning || pending) {
-        alert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
+        await showAlert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
       } else {
         NavigateTo("/adminDashboard/events");
       }
     } catch (error) {
-      alert(error.response?.data?.Error || error.message);
+      await showAlert(error.response?.data?.Error || error.message);
     } finally {
       setSaving(false);
     }
@@ -535,23 +537,7 @@ export const EditEvent = () => {
           </button>
         </fieldset>
       </div>
-      <dialog
-        ref={uploadWarningRef}
-        className={`${loginStyle.loginNotification} p-4 rounded-5 border text-center`}
-        role="alertdialog"
-        aria-labelledby="upload-warning-title"
-        aria-describedby="upload-warning-message"
-      >
-        <h2 id="upload-warning-title" className="h5 text-orangered">
-          Upload
-        </h2>
-        <p id="upload-warning-message">Select a file before uploading.</p>
-        <form method="dialog" className="mt-4">
-          <button type="submit" className={loginStyle.loginButton} autoFocus>
-            <ActionLabel action="confirm">OK</ActionLabel>
-          </button>
-        </form>
-      </dialog>
+      <Popup ref={uploadWarningRef} title="Upload" message="Select a file before uploading." />
     </fieldset>
   );
 };

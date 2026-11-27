@@ -1,0 +1,37 @@
+.dialog {
+  --bs-border-width: 1px;
+}
+
+.dialog.wide {
+  width: min(1100px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.dialog .action {
+  padding: 8px 32px;
+  border-width: 2px;
+  border-radius: 10px;
+  font-weight: bold;
+}

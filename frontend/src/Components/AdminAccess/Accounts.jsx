@@ -2,21 +2,23 @@ import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Accounts = () => {
+  const { showAlert } = usePopup("Accounts");
   const [accounts, setAccounts] = useState([]);
 
   useEffect(() => {
     Axios.get("http://localhost:3000/auth/accounts")
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setAccounts(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   /*
   const handleDelete = (id) => {

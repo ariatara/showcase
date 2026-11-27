@@ -6,6 +6,7 @@ import { localReturn } from "../../Utilities/CommerceApi";
 import { Eye, EyeSlash } from "phosphor-react";
 import { ROLES } from "../../Configurations/Roles";
 import loginStyle from "../../../css/Login.module.css";
+import Popup from "../Popup";
 
 const AccountLogin = () => {
   const [accountDetails, setAccountDetails] = useState({
@@ -230,23 +231,7 @@ const AccountLogin = () => {
           </div>
         </form>
       </div>
-      <dialog
-        ref={loginNotificationRef}
-        className={`${loginStyle.loginNotification} p-4 rounded-5 border text-center`}
-        role="alertdialog"
-        aria-labelledby="login-notification-title"
-        aria-describedby="login-notification-message"
-      >
-        <h2 id="login-notification-title" className="h5 text-orangered">
-          Sign In
-        </h2>
-        <p id="login-notification-message">Wrong username or password</p>
-        <form method="dialog" className="mt-4">
-          <button type="submit" className={loginStyle.loginButton} autoFocus>
-            <ActionLabel action="confirm">OK</ActionLabel>
-          </button>
-        </form>
-      </dialog>
+      <Popup ref={loginNotificationRef} title="Sign In" message="Wrong username or password" />
     </div>
   );
 };

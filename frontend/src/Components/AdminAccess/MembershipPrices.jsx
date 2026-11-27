@@ -2,20 +2,22 @@ import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
+import { usePopup } from "../../Utilities/usePopup";
 
 const MembershipPrices = () => {
+  const { showAlert } = usePopup("Membership Prices");
   const [membershipPrices, setMembershipPrices] = useState([]);
   useEffect(() => {
     Axios.get("http://localhost:3000/auth/membershipPrices")
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setMembershipPrices(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   return (
     <div className="px-5 mt-3">

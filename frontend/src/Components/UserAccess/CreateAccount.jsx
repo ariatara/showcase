@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
 import loginStyle from "../../../css/Login.module.css";
+import Popup from "../Popup";
 
 const CreateAccount = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -139,23 +140,7 @@ const CreateAccount = () => {
           </div>
         </form>}
       </div>
-      <dialog
-        ref={passwordNotificationRef}
-        className={`${loginStyle.loginNotification} p-4 rounded-5 border text-center`}
-        role="alertdialog"
-        aria-labelledby="password-notification-title"
-        aria-describedby="password-notification-message"
-      >
-        <h2 id="password-notification-title" className="h5 text-orangered">
-          Create Account
-        </h2>
-        <p id="password-notification-message">Passwords do not match.</p>
-        <form method="dialog" className="mt-4">
-          <button type="submit" className={loginStyle.loginButton} autoFocus>
-            <ActionLabel action="confirm">OK</ActionLabel>
-          </button>
-        </form>
-      </dialog>
+      <Popup ref={passwordNotificationRef} title="Create Account" message="Passwords do not match." />
     </main>
   );
 };

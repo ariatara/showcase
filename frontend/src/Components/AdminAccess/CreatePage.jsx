@@ -6,8 +6,10 @@ import { useNavigate } from "react-router-dom";
 import Moment from "moment";
 import pageStyle from "../../../css/CreatePage.module.css";
 import QuillEditor from "../QuillEditor/Editor";
+import { usePopup } from "../../Utilities/usePopup";
 
 export const CreatePage = () => {
+  const { showAlert } = usePopup("Create Page");
   const NavigateTo = useNavigate();
 
   const [pageDetails, setPageDetails] = useState({
@@ -73,11 +75,11 @@ export const CreatePage = () => {
 
     {
       Axios.post("http://localhost:3000/auth/pages", pageDetails)
-        .then((result) => {
+        .then(async (result) => {
           if (result.data.Status) {
             NavigateTo("/adminDashboard/pages");
           } else {
-            alert(result.data.Error);
+            await showAlert(result.data.Error);
           }
         })
         .catch((error) => console.log(error));

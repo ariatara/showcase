@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Axios from "axios";
 import { ROLES } from "../../Configurations/Roles";
 import MemberRegistrationForm from "../AccountAccess/MemberRegistrationForm";
-import loginStyle from "../../../css/Login.module.css";
+import Popup, { PopupButton } from "../Popup";
 
 const AddAccountRole = () => {
   const NavigateTo = useNavigate();
@@ -152,13 +152,9 @@ const AddAccountRole = () => {
             NavigateTo("/adminDashboard/accountRoles/" + encodeURIComponent(account_email), { state: { memberRegisteredFor: account_email } });
           }} />
       </section>}
-      <dialog ref={errorDialog} role="alertdialog" aria-labelledby="account-role-error-title" aria-describedby="account-role-error-message"
-        className={`${loginStyle.loginNotification} p-4 rounded-4 border text-center bg-dark`}
-        onCancel={(event) => { event.preventDefault(); setError(""); }}>
-        <h2 id="account-role-error-title" className="h5 text-orangered">Account Role Error</h2>
-        <p id="account-role-error-message" className="text-break">{error}</p>
-        <button type="button" className={loginStyle.loginButton} autoFocus onClick={() => setError("")}><ActionLabel action="confirm">OK</ActionLabel></button>
-      </dialog>
+      <Popup ref={errorDialog} title="Account Role Error" message={error}
+        onCancel={(event) => { event.preventDefault(); setError(""); }}
+        actions={<PopupButton autoFocus onClick={() => setError("")}>OK</PopupButton>} />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import ActionLabel from "../ActionLabel";
 import { useEffect, useState, useRef } from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
 import Axios from "axios";
-import loginStyle from "../../../css/Login.module.css";
+import Popup, { PopupButton } from "../Popup";
 
 const AccountMembers = () => {
   const { account_email } = useParams();
@@ -106,23 +106,16 @@ const AccountMembers = () => {
           </tbody>
         </table>
       </div>
-      <dialog ref={deleteDialog} role="alertdialog" aria-labelledby="delete-member-title" aria-describedby="delete-member-description"
-        className={`${loginStyle.loginNotification} p-4 rounded-4 border text-center bg-dark`}
-        onCancel={(event) => { event.preventDefault(); setPendingDelete(null); }}>
-        <h2 id="delete-member-title" className="h5">Delete Member</h2>
-        {pendingDelete && <>
-          <p id="delete-member-description" className="text-break">
-            Delete <strong>{pendingDelete.first_name} {pendingDelete.last_name}</strong> ({pendingDelete.member_email})? This cannot be undone.
-          </p>
-          <div className="d-flex justify-content-center gap-3">
-            <button type="button" className="btn btn-secondary" autoFocus onClick={() => setPendingDelete(null)}><ActionLabel action="cancel">Cancel</ActionLabel></button>
-            <button type="button" className="btn btn-danger" onClick={() => {
-              setPendingDelete(null);
-              handleDelete(pendingDelete.id);
-            }}><ActionLabel action="delete">Delete</ActionLabel></button>
-          </div>
-        </>}
-      </dialog>
+      <Popup ref={deleteDialog} title="Delete Member"
+        message={pendingDelete && <>Delete <strong>{pendingDelete.first_name} {pendingDelete.last_name}</strong> ({pendingDelete.member_email})? This cannot be undone.</>}
+        onCancel={(event) => { event.preventDefault(); setPendingDelete(null); }}
+        actions={pendingDelete && <>
+          <PopupButton action="cancel" autoFocus onClick={() => setPendingDelete(null)}>Cancel</PopupButton>
+          <PopupButton action="delete" danger onClick={() => {
+            setPendingDelete(null);
+            handleDelete(pendingDelete.id);
+          }}>Delete</PopupButton>
+        </>} />
     </div>
   );
 };

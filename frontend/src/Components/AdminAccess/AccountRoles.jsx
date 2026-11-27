@@ -2,8 +2,10 @@ import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link, useParams, useLocation } from "react-router-dom";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AccountRoles = () => {
+  const { showAlert } = usePopup("Account Roles");
   const { account_email } = useParams();
   const { state } = useLocation();
 
@@ -17,11 +19,11 @@ const AccountRoles = () => {
     setAccount(undefined);
     setDetailsError("");
     Axios.get("http://localhost:3000/auth/accountRoles/" + email, { signal: controller.signal })
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setAccountRoles(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => { if (!controller.signal.aborted) console.log(error); });
@@ -41,15 +43,15 @@ const AccountRoles = () => {
         }
       });
     return () => controller.abort();
-  }, [account_email]);
+  }, [account_email, showAlert]);
 
   const handleDelete = (id) => {
     Axios.delete("http://localhost:3000/auth/deleteAccountRole/" + id).then(
-      (result) => {
+      async (result) => {
         if (result.data.Status) {
           window.location.reload();
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       }
     );

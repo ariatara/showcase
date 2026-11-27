@@ -44,10 +44,12 @@ import { EditEvent } from "./Components/AdminAccess/EditEvent";
 import ProductTypes from "./Components/AdminAccess/ProductTypes";
 import AddProductType from "./Components/AdminAccess/AddProductType";
 import CommerceSettings from "./Components/AdminAccess/CommerceSettings";
+import PopupProvider from "./Components/PopupProvider";
 
 function App() {
   return (
     <BrowserRouter>
+      <PopupProvider>
       <NavigationBar />
       <Routes>
         <Route path="/" element={<AccountLogin />}></Route>
@@ -120,6 +122,7 @@ function App() {
         </Route>
       </Routes>
       <FooterBar />
+      </PopupProvider>
     </BrowserRouter>
   );
 }

@@ -2,23 +2,25 @@ import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddMembershipPrice = () => {
+  const { showAlert } = usePopup("Add Membership Price");
   const NavigateTo = useNavigate();
 
   const [membershipCategories, setMembershipCategories] = useState([]);
 
   useEffect(() => {
     Axios.get("http://localhost:3000/auth/membershipCategories")
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setMembershipCategories(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   const [membershipPrice, setMembershipPrice] = useState({
     category: "Adult",
@@ -29,11 +31,11 @@ const AddMembershipPrice = () => {
     event.preventDefault();
 
     Axios.post("http://localhost:3000/auth/addMembershipPrice", membershipPrice)
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           NavigateTo("/adminDashboard/membershipPrices");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));

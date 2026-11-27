@@ -10,35 +10,37 @@ import PropTypes from "prop-types";
 import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
+  const { showAlert } = usePopup("Add Member Products");
   const [productTypes, setProductTypes] = useState([]);
 
   useEffect(() => {
     Axios.get(ServerLocation("/auth/productTypes"))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setProductTypes(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   const [productTargets, setProductTargets] = useState([]);
 
   useEffect(() => {
     Axios.get(ServerLocation("/auth/membershipCategories"))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setProductTargets(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
@@ -53,7 +55,7 @@ const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
 
       return uploadedFileName;
     } catch (error) {
-      alert(error.response?.data?.Error || error.message);
+      await showAlert(error.response?.data?.Error || error.message);
       return null;
     }
   };

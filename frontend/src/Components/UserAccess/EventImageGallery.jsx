@@ -1,4 +1,4 @@
-import ActionLabel from "../ActionLabel";
+import Popup, { PopupButton } from "../Popup";
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { eventImageUrl } from "../../Utilities/EventImages";
@@ -68,7 +68,15 @@ export default function EventImageGallery({ imagePaths, eventTitle, hubLabel }) 
           </li>
         ))}
       </ul>
-      <dialog ref={dialogRef} className={styles.dialog} aria-label={`${hubLabel} image viewer`}
+      <Popup ref={dialogRef} title={hubLabel} size="large" role="dialog" aria-label={`${hubLabel} image viewer`}
+        headerActions={<PopupButton action="cancel" ref={closeRef} onClick={close}>Close</PopupButton>}
+        actions={<>
+          {imagePaths.length > 1 && <PopupButton action="previous" disabled={activeIndex === 0}
+            onClick={() => move(-1)}>Previous</PopupButton>}
+          <span aria-live="polite" aria-atomic="true">{(activeIndex ?? 0) + 1} / {imagePaths.length}</span>
+          {imagePaths.length > 1 && <PopupButton action="next" disabled={activeIndex === imagePaths.length - 1}
+            onClick={() => move(1)}>Next</PopupButton>}
+        </>}
         onCancel={(event) => { event.preventDefault(); close(); }}
         onClose={() => { if (!dialogRef.current?.open) close(); }}
         onClick={(event) => {
@@ -77,37 +85,18 @@ export default function EventImageGallery({ imagePaths, eventTitle, hubLabel }) 
             || event.clientY < bounds.top || event.clientY > bounds.bottom)) close();
         }}
         onKeyDown={(event) => {
-          if (event.key === "Tab") {
-            const buttons = [...event.currentTarget.querySelectorAll("button:not(:disabled)")];
-            const index = buttons.indexOf(document.activeElement);
-            if ((event.shiftKey && index <= 0) || (!event.shiftKey && (index < 0 || index === buttons.length - 1))) {
-              event.preventDefault();
-              buttons[event.shiftKey ? buttons.length - 1 : 0].focus();
-            }
-          }
           if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
             event.preventDefault();
             move(event.key === "ArrowLeft" ? -1 : 1);
           }
         }}>
-        <div className={styles.toolbar}>
-          <span>{hubLabel}</span>
-          <button type="button" ref={closeRef} onClick={close}><ActionLabel action="cancel">Close</ActionLabel></button>
-        </div>
         {activeIndex !== null && (
           <div className={styles.viewerImage}>
             <GalleryImage key={imagePaths[activeIndex]} filename={imagePaths[activeIndex]}
               description={description(activeIndex)} position={activeIndex + 1} />
           </div>
         )}
-        <div className={styles.controls}>
-          {imagePaths.length > 1 && <button type="button" disabled={activeIndex === 0}
-            onClick={() => move(-1)}><ActionLabel action="previous">Previous</ActionLabel></button>}
-          <span aria-live="polite" aria-atomic="true">{(activeIndex ?? 0) + 1} / {imagePaths.length}</span>
-          {imagePaths.length > 1 && <button type="button" disabled={activeIndex === imagePaths.length - 1}
-            onClick={() => move(1)}><ActionLabel action="next">Next</ActionLabel></button>}
-        </div>
-      </dialog>
+      </Popup>
     </section>
   );
 }

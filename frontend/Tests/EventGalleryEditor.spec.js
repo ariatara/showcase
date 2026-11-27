@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { expectActionIcon } from "./ActionIconAssertions.js";
 import { galleryFixture, selectedImage } from "./GalleryFixtures.js";
+import { dismissPopup } from "./PopupAssertions.js";
 
 const upperEditor = (page) => page.getByRole("group", { name: /^Upper hub event images:?$/i });
 const lowerEditor = (page) => page.getByRole("group", { name: /^Lower hub event images:?$/i });
@@ -116,8 +117,6 @@ for (const hub of ["Upper", "Lower"]) {
     const field = `${hub.toLowerCase()}HubBackground`;
     const filename = `${hub} background #1.png`;
     state.row[`${hub.toLowerCase()}_hub_background_image_name`] = filename;
-    const messages = [];
-    page.on("dialog", async (dialog) => { messages.push(dialog.message()); await dialog.accept(); });
     await page.goto("/adminDashboard/editEvent/gallery_event");
     const background = page.getByRole("group", { name: `${hub} Hub Background Image:`, exact: true });
     const input = background.locator('input[type="file"]');
@@ -150,8 +149,7 @@ for (const hub of ["Upper", "Lower"]) {
     await expect(image).toHaveAttribute("alt", filename);
     state.failUploads.add(1);
     await upload.click();
-    await expect.poll(() => messages.length).toBe(1);
-    expect(messages[0]).toContain("Upload temporarily unavailable");
+    await dismissPopup(page, "Upload temporarily unavailable");
     await expect(image).toHaveAttribute("alt", filename);
     await upload.click();
     await expect(image).toHaveAttribute("alt", `${field}_2.png`);
@@ -410,15 +408,12 @@ test("edit appends, reorders, removes and saves independent CSV galleries that r
 
 test("create preserves pending-file warnings and reuses the saved draft ID instead of creating twice", async ({ page }) => {
   const state = await galleryFixture(page, { upper: 0, lower: 0 });
-  const messages = [];
-  page.on("dialog", async (dialog) => { messages.push(dialog.message()); await dialog.accept(); });
   await page.goto("/adminDashboard/addEvent");
   await page.getByRole("textbox", { name: "Page Title", exact: true }).fill("Gallery Draft");
   const upper = upperEditor(page);
   await upper.getByLabel("Add images", { exact: true }).setInputFiles(selectedImage());
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect.poll(() => messages.length).toBe(1);
-  expect(messages[0]).toContain("Selected images are not saved");
+  await dismissPopup(page, "Selected images are not saved");
   expect(state.writes[0].payload.upperHubEventImages).toBeNull();
   await expect(page).toHaveURL(/\/adminDashboard\/addEvent$/);
   await expect(pendingList(upper).getByRole("listitem")).toHaveCount(1);
@@ -558,14 +553,11 @@ test("partial upload failure preserves successes, releases busy state and retrie
 test("failed event saves retain gallery edits and permit retry", async ({ page }) => {
   const state = await galleryFixture(page, { upper: 2, lower: 0 });
   state.failSave = true;
-  const messages = [];
-  page.on("dialog", async (dialog) => { messages.push(dialog.message()); await dialog.accept(); });
   await page.goto("/adminDashboard/editEvent/gallery_event");
   const upper = upperEditor(page);
   await upper.getByRole("button", { name: "Move upper_2.png earlier", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect.poll(() => messages.length).toBe(1);
-  expect(messages[0]).toBe("Event save unavailable.");
+  await dismissPopup(page, "Event save unavailable.");
   await expect(page).toHaveURL(/editEvent/);
   await expect(savedList(upper).getByRole("listitem")).toHaveCount(2);
   state.failSave = false;
@@ -650,15 +642,12 @@ for (const form of ["addEvent", "editEvent/gallery_event"]) {
 
 test("legacy galleries over ten remain readable but must be reduced before saving", async ({ page }) => {
   const state = await galleryFixture(page, { upper: 11, lower: 1 });
-  const messages = [];
-  page.on("dialog", async (dialog) => { messages.push(dialog.message()); await dialog.accept(); });
   await page.goto("/adminDashboard/editEvent/gallery_event");
   const upper = upperEditor(page);
   await expect(savedList(upper).getByRole("listitem")).toHaveCount(11);
   await expect(upper.getByRole("alert")).toContainText("Remove images before saving");
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect.poll(() => messages.length).toBe(1);
-  expect(messages[0]).toContain("at most 10");
+  await dismissPopup(page, "at most 10");
   expect(state.writes).toHaveLength(0);
   await upper.getByRole("button", { name: "Remove upper_11.png", exact: true }).click();
   await expect(upper.getByRole("alert")).toHaveCount(0);

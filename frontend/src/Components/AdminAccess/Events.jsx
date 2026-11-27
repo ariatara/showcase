@@ -4,18 +4,20 @@ import Axios from "axios";
 import { Link } from "react-router-dom";
 import { ServerLocation } from "../../Utilities/Locations";
 import Moment from "moment";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Events = () => {
+  const { showAlert, showConfirm } = usePopup("Events");
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        Axios.get(ServerLocation("/auth/events")).then((response) => {
+        Axios.get(ServerLocation("/auth/events")).then(async (response) => {
           if (response.data.Status) {
             setEvents(response.data.Result);
           } else {
-            alert(response.data.Error);
+            await showAlert(response.data.Error);
           }
         });
       } catch (error) {
@@ -24,7 +26,7 @@ const Events = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [showAlert]);
 
   const handleCopy = (id) => {
     const targetEvent = events.find((x) => x.id === id);
@@ -57,30 +59,30 @@ const Events = () => {
     console.log(eventDetails);
 
     Axios.post(ServerLocation("/auth/events"), eventDetails)
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           window.location.reload();
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
-      .catch((error) => alert(error.response?.data?.Error || error.message));
+      .catch(async (error) => await showAlert(error.response?.data?.Error || error.message));
   };
 
-const handleDelete = (id) => {
-  if (window.confirm("Are you sure you want to delete this event?")) {
+const handleDelete = async (id) => {
+  if (await showConfirm("Are you sure you want to delete this event?", { title: "Delete Event", confirmLabel: "Delete", confirmAction: "delete" })) {
     Axios.delete(ServerLocation("/auth/events/" + id))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
-          setEvents(events.filter(event => event.id !== id));
-          alert("Event deleted successfully!");
+          setEvents((current) => current.filter(event => event.id !== id));
+          await showAlert("Event deleted successfully!");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
-      .catch((error) => {
+      .catch(async (error) => {
         console.log(error);
-        alert(error.response?.data?.Error || "Failed to delete event. Please try again.");
+        await showAlert(error.response?.data?.Error || "Failed to delete event. Please try again.");
       });
   }
 };

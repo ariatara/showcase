@@ -11,8 +11,10 @@ import { UploadFileByFieldName } from "../../Utilities/Uploads";
 import { saveEvent } from "../../Utilities/SaveEvent";
 import UploadedFileNames from "./UploadedFileNames";
 import EventImageEditor from "./EventImageEditor";
+import { usePopup } from "../../Utilities/usePopup";
 
 export const CreateEvent = () => {
+  const { showAlert } = usePopup("Create Event");
   const NavigateTo = useNavigate();
   const [savedId, setSavedId] = useState();
   const [saving, setSaving] = useState(false);
@@ -67,7 +69,7 @@ export const CreateEvent = () => {
       }));
       setPendingUploads((current) => ({ ...current, [fieldName]: null }));
     } catch (error) {
-      alert(error.response?.data?.Error || error.message);
+      await showAlert(error.response?.data?.Error || error.message);
     } finally {
       setUploading((count) => count - 1);
     }
@@ -100,12 +102,12 @@ export const CreateEvent = () => {
       }
       const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
       if (result.warning || pending) {
-        alert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
+        await showAlert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
       } else {
         NavigateTo("/adminDashboard/events");
       }
     } catch (error) {
-      alert(error.response?.data?.Error || error.message);
+      await showAlert(error.response?.data?.Error || error.message);
     } finally {
       setSaving(false);
     }

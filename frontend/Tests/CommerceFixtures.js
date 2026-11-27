@@ -1,8 +1,8 @@
 import { galleryFixture } from "./GalleryFixtures.js";
 
-export async function commerceFixture(page, { access = "member" } = {}) {
+export async function commerceFixture(page, { access = "member", viewTemplate = "signature" } = {}) {
   const gallery = await galleryFixture(page);
-  gallery.row.view_template = "signature";
+  gallery.row.view_template = viewTemplate;
   const state = { version: 0, lines: [], catalogReads: 0, captures: 0, captureStatus: "paid", quoteError: "", orders: {} };
   await page.route("http://localhost:3000/account/commerce/**", async (route) => {
     const request = route.request(), path = new URL(request.url()).pathname, method = request.method();

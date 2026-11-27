@@ -1,8 +1,10 @@
 import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 export const AdminHome = () => {
+  const { showAlert } = usePopup("Admin Home");
   const [adminTotal, setAdminTotal] = useState(0);
   const [accountTotal, setAccountTotal] = useState(0);
   const [memberTotal, setMemberTotal] = useState(0);
@@ -12,8 +14,14 @@ export const AdminHome = () => {
     adminCount();
     accountCount();
     memberCount();
-    adminRecords();
-  }, []);
+    Axios.get("http://localhost:3000/auth/adminRecords").then(async (result) => {
+      if (result.data.Status) {
+        setAdministrators(result.data.Result);
+      } else {
+        await showAlert(result.data.Error);
+      }
+    });
+  }, [showAlert]);
 
   const adminCount = () => {
     Axios.get("http://localhost:3000/auth/adminCount").then((result) => {
@@ -35,16 +43,6 @@ export const AdminHome = () => {
     Axios.get("http://localhost:3000/auth/memberCount").then((result) => {
       if (result.data.Status) {
         setMemberTotal(result.data.Result[0].count);
-      }
-    });
-  };
-
-  const adminRecords = () => {
-    Axios.get("http://localhost:3000/auth/adminRecords").then((result) => {
-      if (result.data.Status) {
-        setAdministrators(result.data.Result);
-      } else {
-        alert(result.data.Error);
       }
     });
   };

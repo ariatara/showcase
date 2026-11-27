@@ -77,7 +77,7 @@ for (const failure of ["rejection", "network"]) test(`registration displays ${fa
   expect(attempts).toBe(2);
 });
 
-for (const width of [390, 1440]) test(`registration matches login styling on a plain background at ${width}px`, async ({ page }, testInfo) => {
+for (const width of [390, 1440]) test(`registration keeps login styling over the Kolkata night background at ${width}px`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: 900 });
   await registrationPage(page, (route) => route.abort());
   await page.goto("/login");
@@ -95,7 +95,16 @@ for (const width of [390, 1440]) test(`registration matches login styling on a p
   const heading = page.getByRole("heading", { name: "Create Account", exact: true });
   const card = heading.locator("..");
   await expectActionIcon(page.getByRole("button", { name: "Create Account", exact: true }), "person-plus");
-  await expect(page.getByRole("main")).toHaveCSS("background-image", "none");
+  await expect(page.getByRole("main")).toHaveCSS("background-image", /\/Images\/Kolkata-Night\.jpg/);
+  await expect(page.getByRole("main")).toHaveCSS("background-size", "cover");
+  await expect(page.getByRole("main")).toHaveCSS("background-position", "50% 50%");
+  await expect(page.getByRole("main")).toHaveCSS("background-repeat", "no-repeat");
+  expect(await page.evaluate(async () => {
+    const background = new Image();
+    background.src = "/Images/Kolkata-Night.jpg";
+    await background.decode();
+    return background.naturalWidth;
+  })).toBeGreaterThan(0);
   await expect(page.getByRole("main")).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await heading.evaluate(appearance)).toEqual(loginHeading);
   expect(await page.getByRole("button", { name: "Create Account", exact: true }).evaluate(appearance)).toEqual(loginButton);

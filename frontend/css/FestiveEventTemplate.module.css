@@ -1,0 +1,104 @@
+.page {
+  min-height: 100vh;
+  padding: 100px 20px 110px;
+  color: #fff4e5;
+  background: radial-gradient(ellipse at top left, #681d3c, transparent 55%),
+    radial-gradient(ellipse at bottom right, #4b1a42, transparent 50%), #240e22;
+}
+.content { max-width: 1240px; min-width: 0; margin: auto; }
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 440px;
+  overflow: hidden;
+  text-align: center;
+  border: 1px solid #c89e58;
+  border-radius: 32px 32px 10px 10px;
+  background: linear-gradient(135deg, #731c3c, #32112e) center / cover;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, .25);
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(242, 205, 138, .45);
+  border-radius: 21px 21px 4px 4px;
+  pointer-events: none;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 8% 54%, #e9c477 0 2px, transparent 3px),
+    radial-gradient(circle at 16% 80%, #e6a3b3 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 40%, #e6a3b3 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 77%, #e9c477 0 3px, transparent 4px);
+  opacity: .65;
+  pointer-events: none;
+}
+.lights {
+  position: absolute;
+  z-index: 1;
+  top: 36px;
+  left: -2%;
+  width: 104%;
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid rgba(246, 218, 161, .6);
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+.lights span {
+  position: relative;
+  width: 11px;
+  height: 19px;
+  margin-top: 7px;
+  border-radius: 4px 4px 50% 50%;
+  background: #ffe4a5;
+  box-shadow: 0 0 12px #efb85c, 0 0 28px rgba(255, 219, 136, .45);
+}
+.lights span::before { content: ""; position: absolute; left: 5px; top: -7px; height: 7px; border-left: 1px solid #d5b579; }
+.lights span:nth-child(3n) { background: #ffb5cb; box-shadow: 0 0 14px #dc688f; }
+.heroText { position: relative; z-index: 1; width: 100%; max-width: 1000px; padding: 100px clamp(28px, 5vw, 72px) 64px; }
+.eyebrow { color: #ffe0a0; text-transform: uppercase; font-size: .8rem; font-weight: 600; letter-spacing: .22em; margin-bottom: 22px; }
+.hero h1 { color: #fff6e6; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.2rem, 5vw, 4.7rem); font-weight: 400; line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+.ornament { position: relative; width: 140px; height: 1px; margin: 30px auto 0; background: linear-gradient(90deg, transparent, #e9c477, transparent); }
+.ornament::after { content: ""; position: absolute; top: -4px; left: calc(50% - 4px); width: 9px; height: 9px; background: #e9c477; transform: rotate(45deg); }
+.details {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 24px;
+  padding: 30px;
+  margin: 20px 0 32px;
+  border: 1px solid #a87c4b;
+  border-radius: 10px 10px 24px 24px;
+  background: #3d1730;
+}
+.details > div { min-width: 0; }
+.details > div + div { border-left: 1px solid #845638; padding-left: 24px; }
+.details h2 { color: #ffe0a0; font-size: .8rem; text-transform: uppercase; letter-spacing: .14em; }
+.details p { margin: 12px 0; line-height: 1.7; overflow-wrap: anywhere; }
+.details a, .richText a { color: #ffe0a0; text-underline-offset: 4px; }
+.details a:focus-visible, .richText a:focus-visible { outline: 3px solid #ffe0a0; outline-offset: 4px; }
+.hub {
+  min-width: 0;
+  padding: 24px;
+  margin: 32px 0;
+  border: 1px solid #a87c4b;
+  border-radius: 24px;
+  background: #381329 center / cover;
+  box-shadow: inset 0 0 0 5px rgba(231, 181, 102, .06), 0 14px 32px rgba(0, 0, 0, .12);
+}
+.hub > .ornament { margin-top: 8px; margin-bottom: 24px; }
+.hub .richText { height: auto; min-height: 0; overflow: visible; padding: 12px; font-size: 1.05rem; line-height: 1.8; overflow-wrap: anywhere; }
+.richText img, .richText video, .richText iframe { max-width: 100%; }
+.richText > :last-child { margin-bottom: 0; }
+@media (max-width: 640px) {
+  .page { padding-left: 12px; padding-right: 12px; }
+  .hero { min-height: 380px; }
+  .details { grid-template-columns: 1fr; padding: 24px; gap: 20px; }
+  .details > div + div { border-left: 0; border-top: 1px solid #845638; padding-left: 0; padding-top: 20px; }
+  .hub { padding: 10px; }
+}

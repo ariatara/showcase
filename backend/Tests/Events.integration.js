@@ -12,6 +12,7 @@ import { ROLES } from "../Configurations/Roles.js";
 import { SECRETS } from "../Configurations/Secrets.js";
 import { createEventHandlers } from "../Controllers/EventAccess.js";
 import { replaceMemberProducts } from "../Utilities/MemberProductWrites.js";
+import { EVENT_TEMPLATE_IDS } from "../Utilities/EventTemplates.js";
 
 // Explicitly opt in: tests create/drop only their own uniquely named databases.
 const enabled = process.env.EVENT_TEST_MYSQL === "1";
@@ -79,7 +80,10 @@ for (const upgrade of [false, true]) {
       }
 
       const handlers = createEventHandlers(connection);
-      if (upgrade) await runScript(db, templateMigration, database);
+      if (upgrade) {
+        await assert.rejects(db.query("SELECT view_template FROM events LIMIT 1"), { code: "ER_BAD_FIELD_ERROR" });
+        await runScript(db, templateMigration, database);
+      }
       await runScript(db, commerceMigration, database);
       const app = Express();
       app.use(Express.json());
@@ -128,6 +132,23 @@ for (const upgrade of [false, true]) {
       assert.equal((await request(`/events/${id}`, "PUT", full)).Status, true);
       assert.equal((await request("/public/events/fair")).code, 200);
       assert.equal((await request("/public/events/fair")).Result[0].start_date, "2026-04-01");
+      await t.test("template changes persist through SQL, admin reads and public reads without changing event data", async () => {
+        const [[before]] = await db.query("SELECT * FROM events WHERE id = ?", [id]);
+        for (const viewTemplate of [...EVENT_TEMPLATE_IDS, "classic"]) {
+          const updated = await request(`/events/${id}`, "PUT", { viewTemplate });
+          assert.equal(updated.Status, true);
+          const [[stored]] = await db.query("SELECT * FROM events WHERE id = ?", [id]);
+          assert.equal(stored.view_template, viewTemplate);
+          assert.deepEqual({ ...stored, view_template: before.view_template, modified_date: before.modified_date }, before);
+          assert.equal((await request("/admin/events/fair")).Result[0].view_template, viewTemplate);
+          assert.equal((await request("/public/events/fair")).Result[0].view_template, viewTemplate);
+        }
+        const rejected = await request(`/events/${id}`, "PUT", { viewTemplate: "unavailable" });
+        assert.equal(rejected.code, 400);
+        assert.equal((await request("/admin/events/fair")).Result[0].view_template, "classic");
+        assert.equal((await request(`/events/${id}`, "PUT", { venueAddress: "Hall" })).Status, true);
+        assert.equal((await request("/admin/events/fair")).Result[0].view_template, "classic");
+      });
       const galleryPaths = Array.from({ length: 10 }, (_, i) => `gallery_${i}.jpg`);
       for (const field of ["upperHubEventImages", "lowerHubEventImages"]) {
         const column = field === "upperHubEventImages" ? "upper_hub_event_image_names" : "lower_hub_event_image_names";

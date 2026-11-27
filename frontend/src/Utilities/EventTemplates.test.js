@@ -27,6 +27,16 @@ test("explicit invalid templates fail rather than silently becoming the default"
   }
 });
 
+test("Festive survives editor payload preparation and backend validation without falling back", () => {
+  const event = eventFromRow({ page_title: "Celebration", url: "celebration", view_template: "festive" });
+  const payload = prepareEventPayload(event);
+  assert.equal(payload.viewTemplate, "festive");
+  const normalized = normalizeEventPayload(payload);
+  assert.equal(normalized.viewTemplate, "festive");
+  assert.equal(validateEvent(normalized).viewTemplate, undefined);
+  assert.equal(resolveEventTemplate(event.viewTemplate), "festive");
+});
+
 test("product forms permit zero stock and exact cents while rejecting invalid identities", () => {
   const product = { productName: "Ticket", productType: "Entry", productTarget: "Adult",
     productPrice: "1.25", productInventory: 0, eventDate: "2026-04-01", productId: 1, version: 2 };

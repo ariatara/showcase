@@ -3,8 +3,9 @@ import PropTypes from "prop-types";
 import { resolveEventTemplate } from "../../../Utilities/EventTemplates";
 import ClassicEventTemplate from "./ClassicEventTemplate";
 import SignatureEventTemplate from "./SignatureEventTemplate";
+import FestiveEventTemplate from "./FestiveEventTemplate";
 
-const templates = { signature: SignatureEventTemplate, classic: ClassicEventTemplate };
+const templates = { signature: SignatureEventTemplate, classic: ClassicEventTemplate, festive: FestiveEventTemplate };
 export default function EventViewRenderer({ event, memberProducts }) {
   const id = resolveEventTemplate(event.viewTemplate);
   useEffect(() => {

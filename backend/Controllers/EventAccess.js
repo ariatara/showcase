@@ -5,6 +5,12 @@ import { DEFAULT_EVENT_TEMPLATE } from "../Utilities/EventTemplates.js";
 
 function databaseError(response, error, action) {
   console.error(`${action} event failed:`, error.code);
+  if (error.code === "ER_BAD_FIELD_ERROR" && error.sqlMessage?.includes("'view_template'")) {
+    return response.status(500).json({
+      Status: false,
+      Error: "Event templates are not configured in the database. Apply migration 002_event_templates.mysql.sql before saving.",
+    });
+  }
   if (error.code === "ER_DUP_ENTRY") {
     return response.status(409).json({ Status: false, Error: "Page title/URL already exists." });
   }

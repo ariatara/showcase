@@ -3,19 +3,21 @@ import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { ServerLocation } from "../../Utilities/Locations";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Pages = () => {
+  const { showAlert, showConfirm } = usePopup("Pages");
   const [pages, setPages] = useState([]); // Fixed: was "events" instead of "pages"
 
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        Axios.get(ServerLocation("/auth/pages")).then((response) => {
+        Axios.get(ServerLocation("/auth/pages")).then(async (response) => {
           if (response.data.Status) {
             console.log(response.data.Result);
             setPages(response.data.Result);
           } else {
-            alert(response.data.Error);
+            await showAlert(response.data.Error);
           }
         });
       } catch (error) {
@@ -23,24 +25,24 @@ const Pages = () => {
       }
     };
     fetchPages();
-  }, []);
+  }, [showAlert]);
 
   // Add this handleDelete function
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this page?")) {
+  const handleDelete = async (id) => {
+    if (await showConfirm("Are you sure you want to delete this page?", { title: "Delete Page", confirmLabel: "Delete", confirmAction: "delete" })) {
       Axios.delete(ServerLocation("/auth/pages/" + id))
-        .then((result) => {
+        .then(async (result) => {
           if (result.data.Status) {
             // Update the pages state by filtering out the deleted page
-            setPages(pages.filter(page => page.id !== id));
-            alert("Page deleted successfully!");
+            setPages((current) => current.filter(page => page.id !== id));
+            await showAlert("Page deleted successfully!");
           } else {
-            alert(result.data.Error);
+            await showAlert(result.data.Error);
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           console.log(error);
-          alert("Failed to delete page. Please try again.");
+          await showAlert("Failed to delete page. Please try again.");
         });
     }
   };

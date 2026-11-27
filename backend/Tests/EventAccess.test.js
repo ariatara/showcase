@@ -46,6 +46,16 @@ test("duplicates and database CHECK errors receive readable responses", async ()
   }
 });
 
+test("a missing template column reports the required migration instead of a generic save failure", async () => {
+  const handler = createEventHandlers({ query(sql, values, callback) {
+    callback({ code: "ER_BAD_FIELD_ERROR", sqlMessage: "Unknown column 'view_template' in 'field list'" });
+  } }).createEventAdminAccess;
+  const result = await invoke(handler, { pageTitle: "Fair", eventURL: "fair", viewTemplate: "classic" });
+  assert.equal(result.code, 500);
+  assert.equal(result.Status, false);
+  assert.match(result.Error, /002_event_templates\.mysql\.sql/);
+});
+
 test("update merges omitted values but explicitly clears fields when unpublishing", async () => {
   let writes = 0;
   const row = { page_title: "Fair", url: "fair", published: 1, event_title: "Fair",
