@@ -1,0 +1,54 @@
+.ql-font-arial {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.ql-font-gill-sans {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+.ql-font-courier-new {
+  font-family: "Courier New", Courier, monospace;
+}
+
+.ql-font-georgia {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+.ql-font-verdana {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.ql-font-lucida {
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="arial"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="arial"]::before {
+  content: "Arial";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="gill-sans"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="gill-sans"]::before {
+  content: "Gill Sans";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="courier-new"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="courier-new"]::before {
+  content: "Courier New";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="georgia"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="georgia"]::before {
+  content: "Georgia";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="verdana"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before {
+  content: "Verdana";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lucida"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lucida"]::before {
+  content: "Lucida";
+}

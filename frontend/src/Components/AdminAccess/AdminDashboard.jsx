@@ -132,6 +132,9 @@ const AdminDashboard = () => {
                   <span className="ms-2 d-none d-sm-inline">Page List</span>
                 </Link>
               </li>
+              <li className="w-100"><Link to="/adminDashboard/commerce" className="nav-link px-0 align-middle text-white">
+                <i className="bi-cart ms-2" aria-hidden="true"></i><span className="ms-2 d-none d-sm-inline">Commerce</span>
+              </Link></li>
               <hr></hr>
               <li className="w-100" onClick={handleLogout}>
                 <Link className="nav-link px-0 align-middle text-warning">

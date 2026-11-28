@@ -1,5 +1,9 @@
-import DatastoreConnection from "../Utilities/Datastore.js";
+import DatastoreConnection, { createDatastoreConnection } from "../Utilities/Datastore.js";
 import FileUpload from "../Utilities/FileUpload.js";
+import { createEventHandlers } from "./EventAccess.js";
+import { replaceMemberProducts } from "../Utilities/MemberProductWrites.js";
+import { uploadGalleryImage } from "./GalleryImageUpload.js";
+import { GALLERY_FIELDS } from "../Utilities/EventValidation.js";
 
 export const addRoleTypeAdminAccess = (request, response) => {
   const SQLQuery = "INSERT INTO role_types (`role`) VALUES (?)";
@@ -384,112 +388,8 @@ export const getEventsAdminAccess = (request, response) => {
   });
 };
 
-export const createEventAdminAccess = (request, response) => {
-  const SQLQuery =
-    "INSERT INTO events (url, page_title, event_title, start_date, start_time, end_date, end_time, venue_address, map_link, banner_background_image_name, \
-	  upper_hub_content, upper_hub_background_image_name, upper_hub_event_image_names, lower_hub_content, lower_hub_background_image_name, \
-	  lower_hub_event_image_names, published, created_by, created_date, modified_by, modified_date) VALUES (?)";
-
-  console.log(request.body);
-
-  const eventDetails = [
-    request.body.eventURL,
-    request.body.pageTitle,
-    request.body.eventTitle,
-    request.body.startDate,
-    request.body.startTime,
-    request.body.endDate,
-    request.body.endTime,
-    request.body.venueAddress,
-    request.body.mapLink,
-    request.body.bannerBackground,
-    request.body.upperHubContent,
-    request.body.upperHubBackground,
-    request.body.upperHubEventImages,
-    request.body.lowerHubContent,
-    request.body.lowerHubBackground,
-    request.body.lowerHubEventImages,
-    request.body.isPublished,
-    request.body.createdBy,
-    request.body.createdDateTime,
-    request.body.modifiedBy,
-    request.body.modifiedDateTime,
-  ];
-
-  console.log(eventDetails);
-
-  DatastoreConnection.query(SQLQuery, [eventDetails], (error, result) => {
-    if (error) {
-      console.log("Create event error: " + error + "; result: " + result);
-      return response.json({
-        Status: false,
-        Error: "Create event failed.",
-      });
-    }
-    return response.json({ Status: true });
-  });
-};
-
-export const updateEventAdminAccess = (request, response) => {
-  const id = request.params.id;
-
-  const eventDetails = [
-    request.body.eventURL,
-    request.body.pageTitle,
-    request.body.eventTitle,
-    request.body.startDate,
-    request.body.startTime,
-    request.body.endDate,
-    request.body.endTime,
-    request.body.venueAddress,
-    request.body.mapLink,
-    request.body.bannerBackground,
-    request.body.upperHubContent,
-    request.body.upperHubBackground,
-    request.body.upperHubEventImages,
-    request.body.lowerHubContent,
-    request.body.lowerHubBackground,
-    request.body.lowerHubEventImages,
-    request.body.isPublished,
-    request.body.modifiedBy,
-    request.body.modifiedDateTime,
-    id,
-  ];
-
-  const SQLQuery =
-    "UPDATE events \
-      SET url = COALESCE(?, url), \
-        page_title = COALESCE(?, page_title), \
-        event_title = COALESCE(?, event_title), \
-        start_date = COALESCE(?, start_date), \
-        start_time = COALESCE(? , start_time), \
-        end_date = COALESCE(?, end_date), \
-        end_time = COALESCE(?, end_time), \
-        venue_address = COALESCE(?, venue_address), \
-        map_link = COALESCE(?, map_link), \
-        banner_background_image_name = COALESCE(?, banner_background_image_name), \
-        upper_hub_content = COALESCE(?, upper_hub_content), \
-        upper_hub_background_image_name = COALESCE(?, upper_hub_background_image_name), \
-        upper_hub_event_image_names = COALESCE(?,upper_hub_event_image_names), \
-        lower_hub_content = COALESCE(?, lower_hub_content), \
-        lower_hub_background_image_name = COALESCE(?, lower_hub_background_image_name), \
-        lower_hub_event_image_names = COALESCE(?, lower_hub_event_image_names), \
-        published = COALESCE(?, published), \
-        modified_by = COALESCE(?, modified_by), \
-        modified_date = COALESCE(?, modified_date) \
-      WHERE id = ?";
-
-  DatastoreConnection.query(SQLQuery, eventDetails, (error, result) => {
-    if (error) {
-      console.log("Update event error: " + error + "; result: " + result);
-      return response.json({
-        Status: false,
-        Error: "Update event failed.",
-      });
-    }
-    return response.json({ Status: true });
-  });
-};
+export const { createEventAdminAccess, updateEventAdminAccess, getEventAdminAccess } =
+  createEventHandlers(DatastoreConnection);
 
 export const deleteEventAdminAccess = (request, response) => {
   const id = request.params.id;
@@ -498,9 +398,9 @@ export const deleteEventAdminAccess = (request, response) => {
 
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)
-      return response.json({
+      return response.status(error.code === "ER_ROW_IS_REFERENCED_2" ? 409 : 500).json({
         Status: false,
-        Error: "Delete account failed.",
+        Error: error.code === "ER_ROW_IS_REFERENCED_2" ? "This event has cart or order references. Unpublish it instead." : "Delete event failed.",
       });
     return response.json({ Status: true, Result: result });
   });
@@ -594,8 +494,15 @@ export const deletePageAdminAccess = (request, response) => {
 
 export const uploadFileAdminAccess = (request, response, next) => {
   const fieldName = request.params.fieldName;
+  if (GALLERY_FIELDS.includes(fieldName)) return uploadGalleryImage(request, response);
 
-  FileUpload.single(fieldName)(request, response, () => {
+  FileUpload.single(fieldName)(request, response, (error) => {
+    if (error) {
+      console.log("File upload failed: " + error);
+
+      return response.status(500).json({ Error: "File upload failed." });
+    }
+
     if (request.file == null) {
       return response.status(400).json({ Error: "File name not found." });
     }
@@ -610,7 +517,7 @@ export const getMemberProductsAdminAccess = (request, response) => {
   const eventURL = request.params.event_url;
 
   if (eventURL) {
-    const SQLQuery = "SELECT * FROM member_products WHERE event_url = ?";
+    const SQLQuery = "SELECT *, DATE_FORMAT(event_date, '%Y-%m-%d') AS event_date FROM member_products WHERE event_url = ? AND active = TRUE ORDER BY id";
 
     DatastoreConnection.query(SQLQuery, [eventURL], (error, result) => {
       if (error) {
@@ -628,98 +535,36 @@ export const getMemberProductsAdminAccess = (request, response) => {
   }
 };
 
-export const createMemberProductsAdminAccess = (
-  request,
-  response,
-  callback = null
-) => {
-  const SQLQuery =
-    "INSERT INTO member_products (name, type, image_name, target, price, inventory, event_url, event_date) VALUES ?";
-
-  console.log(request.body);
-
+export const createMemberProductsAdminAccess = async (request, response) => {
   const products = Array.isArray(request.body) ? request.body : [request.body];
-
-  const memberProductsDetails = products.map((product) => [
-    product.productName,
-    product.productType,
-    product.productImage,
-    product.productTarget,
-    product.productPrice,
-    product.productInventory,
-    product.eventURL,
-    product.eventDate,
-  ]);
-
-  console.log("Bulk inserting products:", memberProductsDetails.length);
-
-  DatastoreConnection.query(
-    SQLQuery,
-    [memberProductsDetails],
-    (error, result) => {
-      if (error) {
-        console.log(
-          "Create member product error: " + error + "; result: " + result
-        );
-        const errorResponse = {
-          Status: false,
-          Error: "Create member products failed.",
-        };
-
-        if (callback) {
-          return callback(error, null);
-        }
-        return response.json(errorResponse);
-      }
-
-      const successResponse = {
-        Status: true,
-        ProductsCreated: memberProductsDetails.length,
-      };
-
-      if (callback) {
-        return callback(null, successResponse);
-      }
-      return response.json(successResponse);
-    }
-  );
+  if (!products.length) return response.json({ Status: true, ProductsCreated: 0 });
+  if (!products[0]?.eventURL || products.some((product) => product?.eventURL !== products[0].eventURL)) {
+    return response.status(400).json({ Status: false, Error: "Products must belong to one event." });
+  }
+  request.params.event_url = products[0].eventURL;
+  request.body = products;
+  return updateMemberProductsByEventAdminAccess(request, response);
 };
 
-export const updateMemberProductsByEventAdminAccess = (request, response) => {
-  // Call delete with callback to ensure it completes before create
-  deleteMemberProductsByEventAdminAccess(
-    request,
-    response,
-    (deleteError, deleteResult) => {
-      if (deleteError) {
-        return response.json({
-          Status: false,
-          Error: "Delete member products failed.",
-        });
-      }
-
-      // Only call create after successful deletion
-      createMemberProductsAdminAccess(
-        request,
-        response,
-        (createError, createResult) => {
-          if (createError) {
-            return response.json({
-              Status: false,
-              Error: "Create member products failed.",
-            });
-          }
-
-          // Send final response only
-          return response.json({
-            Status: true,
-            Message: "Member products updated successfully",
-            ProductsUpdated: createResult.ProductsCreated,
-          });
-        }
-      );
+export const updateMemberProductsByEventAdminAccess = async (request, response) => {
+  // A dedicated connection prevents interleaving unrelated requests in this transaction.
+  const connection = createDatastoreConnection().promise();
+  try {
+    const expectedVersion = request.get("X-Product-Version");
+    if (!/^[1-9]\d*$/.test(expectedVersion || "")) {
+      return response.status(400).json({ Status: false, Error: "Product collection version is required. Reopen the event." });
     }
-  );
+    const saved = await replaceMemberProducts(connection, request.params.event_url, request.body, expectedVersion);
+    return response.json({ Status: true, ProductsUpdated: saved.products.length, Result: saved });
+  } catch (error) {
+    console.error("Update member products failed:", error.code || error.message);
+    return response.status(error.status || 400).json({
+      Status: false,
+      Error: error.status ? error.message : "Member products were not saved. Check product fields and try again.",
+    });
+  } finally {
+    await connection.end();
+  }
 };
 
 export const deleteMemberProductsByEventAdminAccess = (
@@ -729,7 +574,7 @@ export const deleteMemberProductsByEventAdminAccess = (
 ) => {
   const eventURL = request.params.event_url;
 
-  const SQLQuery = "DELETE FROM member_products WHERE event_url = ?";
+  const SQLQuery = "UPDATE member_products SET active=FALSE, version=version+1 WHERE event_url = ?";
 
   DatastoreConnection.query(SQLQuery, [eventURL], (error, result) => {
     if (error) {
@@ -756,7 +601,7 @@ export const deleteMemberProductsByEventAdminAccess = (
 export const deleteMemberProductByIdAdminAccess = (request, response) => {
   const id = request.params.id;
 
-  const SQLQuery = "DELETE FROM member_products WHERE id = ?";
+  const SQLQuery = "UPDATE member_products SET active=FALSE, version=version+1 WHERE id = ?";
 
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)

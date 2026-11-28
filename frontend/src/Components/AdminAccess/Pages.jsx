@@ -1,20 +1,23 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { ServerLocation } from "../../Utilities/Locations";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Pages = () => {
+  const { showAlert, showConfirm } = usePopup("Pages");
   const [pages, setPages] = useState([]); // Fixed: was "events" instead of "pages"
 
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        Axios.get(ServerLocation("/auth/pages")).then((response) => {
+        Axios.get(ServerLocation("/auth/pages")).then(async (response) => {
           if (response.data.Status) {
             console.log(response.data.Result);
             setPages(response.data.Result);
           } else {
-            alert(response.data.Error);
+            await showAlert(response.data.Error);
           }
         });
       } catch (error) {
@@ -22,24 +25,24 @@ const Pages = () => {
       }
     };
     fetchPages();
-  }, []);
+  }, [showAlert]);
 
   // Add this handleDelete function
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this page?")) {
+  const handleDelete = async (id) => {
+    if (await showConfirm("Are you sure you want to delete this page?", { title: "Delete Page", confirmLabel: "Delete", confirmAction: "delete" })) {
       Axios.delete(ServerLocation("/auth/pages/" + id))
-        .then((result) => {
+        .then(async (result) => {
           if (result.data.Status) {
             // Update the pages state by filtering out the deleted page
-            setPages(pages.filter(page => page.id !== id));
-            alert("Page deleted successfully!");
+            setPages((current) => current.filter(page => page.id !== id));
+            await showAlert("Page deleted successfully!");
           } else {
-            alert(result.data.Error);
+            await showAlert(result.data.Error);
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           console.log(error);
-          alert("Failed to delete page. Please try again.");
+          await showAlert("Failed to delete page. Please try again.");
         });
     }
   };
@@ -50,7 +53,7 @@ const Pages = () => {
         <h4>Page List</h4>
       </div>
       <Link to="/adminDashboard/createPage" className="btn btn-primary">
-        Create Page
+        <ActionLabel action="add">Create Page</ActionLabel>
       </Link>
       <div className="mt-3">
         <table className="table">
@@ -77,25 +80,25 @@ const Pages = () => {
                     to={"/pages/" + x.url}
                     className="btn btn-success btn-sm me-2"
                   >
-                    View
+                    <ActionLabel action="view">View</ActionLabel>
                   </Link>
                   <Link
                     //to={"/adminDashboard/editPage/" + x.id}
-                    className="btn btn-warning btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <Link
                     //to={"/adminDashboard/copyPage/" + x.id}
-                    className="btn btn-info btn-sm me-2"
+                    className="btn btn-copy btn-sm me-2"
                   >
-                    Copy
+                    <ActionLabel action="copy">Copy</ActionLabel>
                   </Link>
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(x.id)} // Fixed: now calls handleDelete with the page ID
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

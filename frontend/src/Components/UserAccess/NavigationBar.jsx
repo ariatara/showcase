@@ -282,7 +282,7 @@ const NavigationBar = () => {
             </li>
             */}
             <li className="nav-item">
-              <Link to={"#"}>
+              <Link to="/shoppingArea" aria-label="View cart">
                 <ShoppingCart size={32} className="text-white me-2" />
               </Link>
             </li>

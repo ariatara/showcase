@@ -10,6 +10,9 @@ import {
   logoutAccountAccess,
   membershipCategoriesAccountAccess,
   registerMemberAccountAccess,
+  getMemberAccountAccess,
+  updateMemberAccountAccess,
+  deleteMemberAccountAccess,
 } from "../Controllers/AccountAccess.js";
 
 const AccountRouter = Express.Router();
@@ -47,6 +50,27 @@ AccountRouter.post(
   AuthenticateToken,
   AuthorizeRoles(ROLES.ADMINISTRATOR, ROLES.MEMBER, ROLES.NONMEMBER),
   registerMemberAccountAccess
+);
+
+AccountRouter.get(
+  "/members/:id",
+  AuthenticateToken,
+  AuthorizeRoles(ROLES.ADMINISTRATOR, ROLES.MEMBER, ROLES.NONMEMBER),
+  getMemberAccountAccess
+);
+
+AccountRouter.put(
+  "/members/:id",
+  AuthenticateToken,
+  AuthorizeRoles(ROLES.ADMINISTRATOR, ROLES.MEMBER, ROLES.NONMEMBER),
+  updateMemberAccountAccess
+);
+
+AccountRouter.delete(
+  "/members/:id",
+  AuthenticateToken,
+  AuthorizeRoles(ROLES.ADMINISTRATOR, ROLES.MEMBER, ROLES.NONMEMBER),
+  deleteMemberAccountAccess
 );
 
 AccountRouter.get(

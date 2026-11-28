@@ -21,6 +21,7 @@ import AddAccountRole from "./Components/AdminAccess/AddAccountRole";
 import AccountDashboard from "./Components/AccountAccess/AccountDashboard";
 import AccountHome from "./Components/AccountAccess/AccountHome";
 import RegisterMember from "./Components/AccountAccess/RegisterMember";
+import EditMember from "./Components/AccountAccess/EditMember";
 
 import AccountRoutes from "./Components/RouteManagement/AccountRoutes";
 import AdminRoutes from "./Components/RouteManagement/AdminRoutes";
@@ -42,10 +43,14 @@ import { CreatePage } from "./Components/AdminAccess/CreatePage";
 import { EditEvent } from "./Components/AdminAccess/EditEvent";
 import ProductTypes from "./Components/AdminAccess/ProductTypes";
 import AddProductType from "./Components/AdminAccess/AddProductType";
+import EditProductType from "./Components/AdminAccess/EditProductType";
+import CommerceSettings from "./Components/AdminAccess/CommerceSettings";
+import PopupProvider from "./Components/PopupProvider";
 
 function App() {
   return (
     <BrowserRouter>
+      <PopupProvider>
       <NavigationBar />
       <Routes>
         <Route path="/" element={<AccountLogin />}></Route>
@@ -55,6 +60,7 @@ function App() {
         <Route path="pages/:page_url" element={<ViewPage />}></Route>
         <Route path="shoppingArea" element={<ShoppingArea />}></Route>
         <Route path="shoppingCheckout" element={<ShoppingCheckout />}></Route>
+        <Route path="orders/:id" element={<ShoppingCheckout />}></Route>
 
         <Route
           path="/adminDashboard"
@@ -83,7 +89,9 @@ function App() {
             element={<AddMembershipPrice />}
           ></Route>
           <Route path="productTypes" element={<ProductTypes />}></Route>
+          <Route path="commerce" element={<CommerceSettings />}></Route>
           <Route path="addProductType" element={<AddProductType />}></Route>
+          <Route path="editProductType/:id" element={<EditProductType />}></Route>
           <Route path="editAccount/:id" element={<EditAccount />}></Route>
           <Route path="accounts" element={<Accounts />}></Route>
           <Route
@@ -112,9 +120,11 @@ function App() {
         >
           <Route path="" element={<AccountHome />}></Route>
           <Route path="registerMember" element={<RegisterMember />}></Route>
+          <Route path="editMember/:id" element={<EditMember />}></Route>
         </Route>
       </Routes>
       <FooterBar />
+      </PopupProvider>
     </BrowserRouter>
   );
 }

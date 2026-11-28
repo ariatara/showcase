@@ -14,6 +14,7 @@ const AuthenticateToken = (request, response, next) => {
           .json({ Status: false, Error: "Authentication failed." });
       } else {
         request.roles = decodedToken.account_roles;
+        request.principal = Object.freeze({ id: decodedToken.id, email: decodedToken.account_email });
 
         next();
       }

@@ -1,8 +1,11 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddAgeGroup = () => {
+  const { showAlert } = usePopup("Add Age Group");
   const [ageGroup, setAgeGroup] = useState();
 
   const NavigateTo = useNavigate();
@@ -10,11 +13,11 @@ const AddAgeGroup = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     Axios.post("http://localhost:3000/auth/addAgeGroup", { ageGroup })
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           NavigateTo("/adminDashboard/ageGroups");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
@@ -36,7 +39,7 @@ const AddAgeGroup = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 mb-1">
-            Add Membership Category
+            <ActionLabel action="add">Add Membership Category</ActionLabel>
           </button>
         </form>
       </div>

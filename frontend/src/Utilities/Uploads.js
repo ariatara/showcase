@@ -1,17 +1,19 @@
 import Axios from "axios";
+import { ServerLocation } from "./Locations";
 
 export const UploadFileByFieldName = async (fieldName, fileName) => {
-    try {
-        const formData = new FormData();
-        formData.append(fieldName, fileName);
+  if (!fileName) {
+    throw new Error("Select a file before uploading.");
+  }
 
-        const response = await Axios.post(
-        "http://localhost:3000/auth/upload/" + fieldName,
-        formData);
+  const formData = new FormData();
+  formData.append(fieldName, fileName);
 
-        return response.data;
-    } 
-    catch (error) {
-        console.log("File upload failed: " + error);
-    }
+  const response = await Axios.post(
+    ServerLocation("/auth/upload/" + fieldName),
+    formData,
+    { withCredentials: true }
+  );
+
+  return response.data;
 };

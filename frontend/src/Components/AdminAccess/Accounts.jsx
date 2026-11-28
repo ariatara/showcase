@@ -1,21 +1,24 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Accounts = () => {
+  const { showAlert } = usePopup("Accounts");
   const [accounts, setAccounts] = useState([]);
 
   useEffect(() => {
     Axios.get("http://localhost:3000/auth/accounts")
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setAccounts(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   /*
   const handleDelete = (id) => {
@@ -55,27 +58,27 @@ const Accounts = () => {
                 <td>
                   <Link
                     to={"/accountDashboard/" + x.account_email}
-                    className="btn btn btn-secondary btn-sm me-2"
+                    className="btn btn-dashboard btn-sm me-2"
                   >
-                    Dashboard
+                    <ActionLabel action="dashboard">Dashboard</ActionLabel>
                   </Link>
                   <Link
                     to={"/adminDashboard/accountRoles/" + x.account_email}
-                    className="btn btn-success btn-sm me-2"
+                    className="btn btn-roles btn-sm me-2"
                   >
-                    Roles
+                    <ActionLabel action="roles">Roles</ActionLabel>
                   </Link>
                   <Link
                     to={"/adminDashboard/editAccount/" + x.id}
-                    className="btn btn-info btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
                     className="btn btn-danger btn-sm"
                     //onClick={() => handleDelete(account.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

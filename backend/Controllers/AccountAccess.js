@@ -1,4 +1,5 @@
-import DatastoreConnection from "../Utilities/Datastore.js";
+import DatastoreConnection, { createDatastoreConnection } from "../Utilities/Datastore.js";
+import { createMemberRegistrationHandler, createMemberReadHandler, createMemberUpdateHandler, createMemberDeleteHandler } from "./MemberRegistration.js";
 
 export const ageGroupsAccountAccess = (request, response) => {
   const SQLQuery = "SELECT * FROM age_groups";
@@ -56,60 +57,15 @@ export const accountMembersAccountAccess = (request, response) => {
   });
 };
 
-export const registerMemberAccountAccess = (request, response) => {
-  const SQLAccountRoleQuery =
-    "INSERT INTO account_roles(account_email, account_role) VALUES (?)";
-
-  const accountRoleDetails = [request.body.account_email, "Member"];
-
-  const SQLRegisterMembershipQuery =
-    "INSERT INTO members (account_email, first_name, last_name, age_group, member_email, membership_category) VALUES (?)";
-
-  const membershipDetails = [
-    request.body.account_email,
-    request.body.first_name,
-    request.body.last_name,
-    request.body.age_group,
-    request.body.member_email,
-    request.body.membership_category,
-  ];
-
-  DatastoreConnection.query(
-    SQLAccountRoleQuery,
-    [accountRoleDetails],
-    (error, result) => {
-      if (error) {
-        console.log("Member role assignment failed: " + error);
-
-        return response.json({
-          Status: false,
-          Error: "Register member failed.",
-        });
-      }
-    }
-  );
-
-  DatastoreConnection.query(
-    SQLRegisterMembershipQuery,
-    [membershipDetails],
-    (error, result) => {
-      if (error) {
-        console.log("Register member failed: " + error);
-
-        return response.json({
-          Status: false,
-          Error: "Register member failed.",
-        });
-      }
-      return response.json({ Status: true });
-    }
-  );
-};
+export const registerMemberAccountAccess = createMemberRegistrationHandler(() => createDatastoreConnection().promise());
+export const getMemberAccountAccess = createMemberReadHandler(() => createDatastoreConnection().promise());
+export const updateMemberAccountAccess = createMemberUpdateHandler(() => createDatastoreConnection().promise());
+export const deleteMemberAccountAccess = createMemberDeleteHandler(() => createDatastoreConnection().promise());
 
 export const getEventAccountAccess = (request, response) => {
   const id = request.params.id;
 
-  const SQLQuery = "SELECT * FROM events WHERE id = ?";
+  const SQLQuery = "SELECT * FROM events WHERE id = ? AND published = TRUE";
   DatastoreConnection.query(SQLQuery, [id], (error, result) => {
     if (error)
       return response.json({

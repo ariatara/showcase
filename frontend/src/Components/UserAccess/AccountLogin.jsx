@@ -1,9 +1,12 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useRef, useState } from "react";
 import Axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { localReturn } from "../../Utilities/CommerceApi";
 import { Eye, EyeSlash } from "phosphor-react";
 import { ROLES } from "../../Configurations/Roles";
 import loginStyle from "../../../css/Login.module.css";
+import Popup from "../Popup";
 
 const AccountLogin = () => {
   const [accountDetails, setAccountDetails] = useState({
@@ -17,8 +20,10 @@ const AccountLogin = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const loginFormRef = useRef(null);
+  const loginNotificationRef = useRef(null);
   const dragRef = useRef(null);
   const NavigateTo = useNavigate();
+  const returnTo = localReturn(new URLSearchParams(useLocation().search).get("returnTo"));
   Axios.defaults.withCredentials = true;
 
   useEffect(() => {
@@ -80,6 +85,7 @@ const AccountLogin = () => {
 
   const handleLogin = (event) => {
     event.preventDefault();
+    setError(undefined);
     Axios.post("http://localhost:3000/user", accountDetails)
       .then((result) => {
         if (result.data.login_status) {
@@ -91,7 +97,7 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/adminDashboard");
+            NavigateTo(returnTo || "/adminDashboard");
           } else if (
             result.data.account_roles.includes(ROLES.MEMBER) ||
             result.data.account_roles.includes(ROLES.NONMEMBER)
@@ -103,13 +109,20 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/accountDashboard/" + accountDetails.account_email);
+            NavigateTo(returnTo || "/accountDashboard/" + accountDetails.account_email);
           }
         } else {
           setError(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          loginNotificationRef.current?.showModal();
+        } else {
+          console.log(error);
+          setError("Unable to sign in. Please try again.");
+        }
+      });
   };
 
   return (
@@ -193,7 +206,7 @@ const AccountLogin = () => {
                 required
               />
               <label htmlFor="tick">
-                I have read the Membership Agreement
+                I have read the Uttoron Account Agreement
               </label>
             </div>
             <div>
@@ -206,7 +219,7 @@ const AccountLogin = () => {
                   !hasAcceptedAgreement
                 }
               >
-                Sign In
+                <ActionLabel action="login">Sign In</ActionLabel>
               </button>
             </div>
             <Link
@@ -218,6 +231,7 @@ const AccountLogin = () => {
           </div>
         </form>
       </div>
+      <Popup ref={loginNotificationRef} title="Sign In" message="Wrong username or password" />
     </div>
   );
 };

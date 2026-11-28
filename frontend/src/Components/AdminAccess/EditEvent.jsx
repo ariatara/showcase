@@ -1,20 +1,57 @@
+import ActionLabel from "../ActionLabel";
 import Axios from "axios";
-import { useEffect, useState, useCallback } from "react";
+import EventTemplateSelector from "./EventTemplateSelector";
+import { useEffect, useRef, useState } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useNavigate, useParams } from "react-router-dom";
-import Moment from "moment";
 import eventStyle from "../../../css/CreateEvent.module.css";
+import imageEditorStyle from "../../../css/EventImageEditor.module.css";
+import Popup from "../Popup";
 import { ServerLocation } from "../../Utilities/Locations";
-import { OriginalFilesInList } from "../../Utilities/Formats";
 import EditMemberProducts from "./EditMemberProducts";
+import EventProductTabs from "./EventProductTabs";
+import UploadedFileNames from "./UploadedFileNames";
+import { eventFromRow } from "../../Utilities/EventValidation";
+import { saveEvent } from "../../Utilities/SaveEvent";
+import { UploadFileByFieldName } from "../../Utilities/Uploads";
+import { EditorFontOptions, matchEditorFont } from "../QuillEditor/EditorFonts";
+import { eventImageUrl, parseEventImagePaths } from "../../Utilities/EventImages";
+import EventImageEditor from "./EventImageEditor";
+import EventImagePreview from "./EventImagePreview";
+import { usePopup } from "../../Utilities/usePopup";
 
-const MAX_FILE_COUNT = 5;
+const eventEditorModules = {
+  clipboard: {
+    matchers: [['[class*="ql-font-"]', matchEditorFont]],
+  },
+  toolbar: [
+    [{ header: ["1", "2", "3", false] }],
+    [{ font: [false, ...EditorFontOptions.map(({ value }) => value)] }],
+    ["bold", "italic", "underline", "link"],
+    [{ color: [] }],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
 
 export const EditEvent = () => {
+  const { showAlert } = usePopup("Edit Event");
+  const { showAlert: showProductAlert } = usePopup("Edit Event Products");
   const NavigateTo = useNavigate();
 
   const { event_url } = useParams();
+  const [saving, setSaving] = useState(false);
+  const [productReceipt, setProductReceipt] = useState();
+  const [nonMemberProductReceipt, setNonMemberProductReceipt] = useState();
+  const [nonMemberProductsVersion, setNonMemberProductsVersion] = useState();
+  const [productTypes, setProductTypes] = useState([]);
+  const [productTargets, setProductTargets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [uploading, setUploading] = useState(0);
+  const [pendingUploads, setPendingUploads] = useState({});
+  const uploadWarningRef = useRef(null);
 
   const [eventDetails, setEventDetails] = useState({
     eventId: "",
@@ -29,10 +66,10 @@ export const EditEvent = () => {
     bannerBackground: "",
     upperHubBackground: "",
     upperHubContent: "",
-    upperHubEventImages: "",
+    upperHubEventImages: [],
     lowerHubBackground: "",
     lowerHubContent: "",
-    lowerHubEventImages: "",
+    lowerHubEventImages: [],
     eventURL: "",
     isPublished: false,
     createdBy: "",
@@ -42,177 +79,120 @@ export const EditEvent = () => {
   });
 
   useEffect(() => {
-    Axios.get(ServerLocation("/user/events/" + event_url))
+    let active = true;
+    setLoading(true);
+    setLoadError("");
+    setPendingUploads({});
+    setProductReceipt(undefined);
+    setNonMemberProductReceipt(undefined);
+    setNonMemberProductsVersion(undefined);
+    Axios.get(ServerLocation("/auth/events/url/" + encodeURIComponent(event_url)))
       .then((response) => {
-        if (response.data.Status) {
-          setEventDetails({
-            eventId: response.data.Result[0].id,
-            pageTitle: response.data.Result[0].page_title,
-            eventURL: response.data.Result[0].url,
-            eventTitle: response.data.Result[0].event_title,
-            startDate: response.data.Result[0].start_date.substring(0, 10),
-            startTime: response.data.Result[0].start_time,
-            endDate: response.data.Result[0].end_date.substring(0, 10),
-            endTime: response.data.Result[0].end_time,
-            venueAddress: response.data.Result[0].venue_address,
-            mapLink: response.data.Result[0].map_link,
-            bannerBackground:
-              response.data.Result[0].banner_background_image_name,
-            upperHubContent: response.data.Result[0].upper_hub_content,
-            upperHubBackground:
-              response.data.Result[0].upper_hub_background_image_name,
-            upperHubEventImages:
-              response.data.Result[0].upper_hub_event_image_names.split(","),
-            lowerHubContent: response.data.Result[0].lower_hub_content,
-            lowerHubBackground:
-              response.data.Result[0].lower_hub_background_image_name,
-            lowerHubEventImages:
-              response.data.Result[0].lower_hub_event_image_names.split(","),
-            isPublished: response.data.Result[0].published,
-            createdBy: response.data.Result[0].created_by,
-            createdDateTime: response.data.Result[0].created_date,
-            modifiedBy: response.data.Result[0].modified_by,
-            modifiedDateTime: response.data.Result[0].modified_date,
-          });
-        } else {
-          alert(response.data.Error);
+        if (!response.data.Status || !response.data.Result?.length) {
+          throw new Error(response.data.Error || "Event not found.");
         }
+        const details = eventFromRow(response.data.Result[0]);
+        if (active) setEventDetails({
+          ...details,
+          upperHubEventImages: parseEventImagePaths(details.upperHubEventImages),
+          lowerHubEventImages: parseEventImagePaths(details.lowerHubEventImages),
+        });
       })
-      .catch((error) => console.log(error));
-  }, []);
-
-  const getEventURL = useCallback(() => {
-    return eventDetails.pageTitle.replace(/ /g, "_").toLocaleLowerCase();
-  }, [eventDetails.pageTitle]);
+      .catch((error) => {
+        if (active) setLoadError(error.response?.data?.Error || error.message);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [event_url]);
 
   useEffect(() => {
-    eventDetails.eventURL = getEventURL();
-  }, [eventDetails, eventDetails.pageTitle, getEventURL]);
-
-  const uploadFileByFieldName = async (fieldName, eventFileName) => {
-    try {
-      const formData = new FormData();
-      formData.append(fieldName, eventFileName);
-
-      const response = await Axios.post(
-        "http://localhost:3000/auth/upload/" + fieldName,
-        formData
-      );
-
-      return response.data;
-    } catch (error) {
-      console.log("File upload failed: " + error);
+    if (loading || loadError) return;
+    let active = true;
+    for (const [endpoint, update] of [["productTypes", setProductTypes], ["membershipCategories", setProductTargets]]) {
+      Axios.get(ServerLocation(`/auth/${endpoint}`))
+        .then((response) => {
+          if (!response.data.Status) throw new Error(response.data.Error || "Product options could not be loaded.");
+          if (active) update(response.data.Result);
+        })
+        .catch((error) => { if (active) return showProductAlert(error.response?.data?.Error || error.message); });
     }
-  };
+    return () => { active = false; };
+  }, [loading, loadError, showProductAlert]);
 
-  const handleMultipleUploads = async (event, fieldName, fieldState) => {
-    event.preventDefault();
+  const getEventURL = () => eventDetails.pageTitle.trim().replace(/ /g, "_").toLocaleLowerCase();
 
-    const targetFileNames = [...new Set(fieldState)];
+  const showUploadWarning = () => uploadWarningRef.current.showModal();
 
-    if (targetFileNames.length > MAX_FILE_COUNT) {
-      alert("Maximum of five files can be uploaded.");
-    }
-
-    const uploadedFileNameCollection = [];
-
-    for (let fileIndex in targetFileNames) {
-      const uploadedFileName = await uploadFileByFieldName(
-        fieldName,
-        targetFileNames[fileIndex]
-      );
-      uploadedFileNameCollection.push(uploadedFileName);
-    }
-
-    uploadedFileNameCollection.forEach((x) => {
-      console.log("Uploaded file:" + x);
-    });
-
-    setEventDetails({
-      ...eventDetails,
-      [fieldName]: uploadedFileNameCollection.join(","),
-    });
-  };
+  const handleGalleryBusy = (busy) => setUploading((count) => count + (busy ? 1 : -1));
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await uploadFileByFieldName(fieldName, fieldState);
+    if (!(fieldState instanceof File)) {
+      showUploadWarning();
+      return;
+    }
 
-    console.log("Uploaded file:" + uploadedFileName);
-
-    setEventDetails({
-      ...eventDetails,
-      [fieldName]: uploadedFileName,
-    });
+    setUploading((count) => count + 1);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+      setEventDetails((current) => ({ ...current, [fieldName]: uploadedFileName }));
+      setPendingUploads((current) => ({ ...current, [fieldName]: null }));
+    } catch (error) {
+      await showAlert(error.response?.data?.Error || error.message);
+    } finally {
+      setUploading((count) => count - 1);
+    }
   };
 
   const setUpperHubContent = (value) => {
-    setEventDetails({
-      ...eventDetails,
-      upperHubContent: value,
-    });
+    setEventDetails((current) => current.upperHubContent === value ? current : { ...current, upperHubContent: value });
   };
 
   const setLowerHubContent = (value) => {
-    setEventDetails({
-      ...eventDetails,
-      lowerHubContent: value,
-    });
+    setEventDetails((current) => current.lowerHubContent === value ? current : { ...current, lowerHubContent: value });
   };
 
-  const [productDetails, setProductDetails] = useState([]);
+  const [productDetails, setProductDetails] = useState(null);
+  const [nonMemberProductDetails, setNonMemberProductDetails] = useState(null);
 
-  const handleUpdate = (event) => {
+  const handleUpdate = async (event) => {
     event.preventDefault();
-
-    const id = eventDetails.eventId;
-
-    delete eventDetails.eventId;
-
-    eventDetails.upperHubEventImages =
-      eventDetails.upperHubEventImages.join(",");
-    eventDetails.lowerHubEventImages =
-      eventDetails.lowerHubEventImages.join(",");
-
-    eventDetails.modifiedDateTime = Moment().format("YYYY-MM-DD HH:mm:ss");
-
-    Axios.put(ServerLocation("/auth/events/" + id), eventDetails)
-      .then((result) => {
-        if (result.data.Status) {
-          NavigateTo("/adminDashboard/events");
-        } else {
-          alert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-
-    productDetails.forEach((product) => {
-      product.eventURL = eventDetails.eventURL;
-    });
-
-    console.log("Edit event productDetails:", productDetails);
-
-    Axios.put(
-      ServerLocation("/auth/memberProducts/" + eventDetails.eventURL),
-      productDetails
-    )
-      .then((result) => {
-        if (result.data.Status) {
-          console.log("Product details updated successfully");
-        } else {
-          alert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-
-    //window.location.reload();
+    if (saving || uploading) return;
+    setSaving(true);
+    try {
+      const result = await saveEvent({ details: { ...eventDetails, nonMemberProductsVersion }, products: productDetails,
+        nonMemberProducts: nonMemberProductDetails, id: eventDetails.eventId });
+      if (result.productReceipt) {
+        setProductReceipt(result.productReceipt);
+        setEventDetails((current) => ({ ...current, productsVersion: result.productReceipt.version }));
+      }
+      if (result.nonMemberProductReceipt) {
+        setNonMemberProductReceipt(result.nonMemberProductReceipt);
+        setNonMemberProductsVersion(result.nonMemberProductReceipt.version);
+      }
+      const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
+      if (result.warning || pending) {
+        await showAlert([result.warning, pending ? "Event saved. Selected images are not saved until you upload them and save again." : ""].filter(Boolean).join("\n"));
+      } else {
+        NavigateTo("/adminDashboard/events");
+      }
+    } catch (error) {
+      await showAlert(error.response?.data?.Error || error.message);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) return <p>Loading event...</p>;
+  if (loadError) return <p role="alert">{loadError}</p>;
 
   return (
-    <div className={eventStyle.createEvent}>
+    <fieldset className={`${eventStyle.createEvent} pb-5`} disabled={saving || uploading > 0}>
       <div className={eventStyle.eventContent}>
         <h4>Edit Event:</h4>
+        <EventTemplateSelector value={eventDetails.viewTemplate} disabled={saving || uploading > 0}
+          onChange={(viewTemplate) => setEventDetails((current) => ({ ...current, viewTemplate }))} />
         <div className="input-group mb-2">
           <span className="input-group-text" id="basic-addon1">
             Page Title
@@ -251,8 +231,8 @@ export const EditEvent = () => {
             }
           ></input>
         </div>
-        <div className={eventStyle.eventDate}>
-          <h6>Event Start:</h6>
+        <fieldset className={eventStyle.eventDate}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event Start:</span></legend>
           <div className="row">
             <div className="col">
               <input
@@ -285,9 +265,9 @@ export const EditEvent = () => {
               ></input>
             </div>
           </div>
-        </div>
-        <div className={eventStyle.eventDate}>
-          <h6>Event End:</h6>
+        </fieldset>
+        <fieldset className={eventStyle.eventDate}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event End:</span></legend>
           <div className="row">
             <div className="col">
               <input
@@ -320,7 +300,7 @@ export const EditEvent = () => {
               ></input>
             </div>
           </div>
-        </div>
+        </fieldset>
         <div className="input-group mb-2">
           <span className="input-group-text" id="basic-addon1">
             Venue
@@ -356,8 +336,9 @@ export const EditEvent = () => {
             }
           ></input>
         </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>Banner Background Image:</h6>
+        <fieldset className={eventStyle.imageUploadContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Banner Background Image:</span></legend>
+          <UploadedFileNames fileNames={eventDetails.bannerBackground} />
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -365,8 +346,8 @@ export const EditEvent = () => {
               id="bannerBackground"
               name="bannerBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   bannerBackground: event.target.files[0],
                 })
               }
@@ -379,30 +360,29 @@ export const EditEvent = () => {
                 handleUpload(
                   event,
                   "bannerBackground",
-                  eventDetails.bannerBackground
+                  pendingUploads.bannerBackground
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image: {OriginalFilesInList(eventDetails.bannerBackground)}
-          </div>
-        </div>
-        <div className={eventStyle.textInputContainer}>
-          <h6>Upper Hub Content:</h6>
+        </fieldset>
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Upper Hub Content:</span></legend>
           <div className={eventStyle.editorContainer}>
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              modules={eventEditorModules}
+              readOnly={saving || uploading > 0}
               value={eventDetails.upperHubContent}
               onChange={setUpperHubContent}
             />
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Background Image:</h6>
+        </fieldset>
+        <fieldset className={`${eventStyle.imageUploadContainer} ${imageEditorStyle.compact}`}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Upper Hub Background Image:</span></legend>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -410,8 +390,8 @@ export const EditEvent = () => {
               id="upperHubBackground"
               name="upperHubBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   upperHubBackground: event.target.files[0],
                 })
               }
@@ -424,70 +404,43 @@ export const EditEvent = () => {
                 handleUpload(
                   event,
                   "upperHubBackground",
-                  eventDetails.upperHubBackground
+                  pendingUploads.upperHubBackground
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image:{" "}
-            {OriginalFilesInList(eventDetails.upperHubBackground)}
-          </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>Upper Hub Event Images:</h6>
-          <div className="input-group mb-2">
-            <input
-              className="form-control"
-              type="file"
-              multiple
-              id="upperHubEventImages"
-              name="upperHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setEventDetails({
-                  ...eventDetails,
-                  upperHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="upperHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "upperHubEventImages",
-                  eventDetails.upperHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-          <div className={eventStyle.imageNames}>
-            Current Image(s):{" "}
-            {OriginalFilesInList(eventDetails.upperHubEventImages)}
-          </div>
-        </div>
-        <div className={eventStyle.textInputContainer}>
-          <h6>Lower Hub Content:</h6>
+          {eventDetails.upperHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
+            <li className={imageEditorStyle.card}>
+              <EventImagePreview key={eventDetails.upperHubBackground}
+                src={eventImageUrl(eventDetails.upperHubBackground)} name={eventDetails.upperHubBackground} />
+              <span className={imageEditorStyle.status}>Uploaded</span>
+            </li>
+          </ul>}
+        </fieldset>
+        <EventImageEditor key={`${event_url}-upper`} fieldName="upperHubEventImages"
+          className={`${imageEditorStyle.compact} rounded-0 my-0`}
+          label={<span className="h6">Upper Hub Event Images:</span>}
+          imagePaths={eventDetails.upperHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, upperHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, upperHubEventImages: pending }))} />
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Lower Hub Content:</span></legend>
           <div className={eventStyle.editorContainer}>
             <ReactQuill
               className={eventStyle.contentEditor}
               theme="snow"
+              modules={eventEditorModules}
+              readOnly={saving || uploading > 0}
               value={eventDetails.lowerHubContent}
               onChange={setLowerHubContent}
             />
           </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Background Image:</h6>
+        </fieldset>
+        <fieldset className={`${eventStyle.imageUploadContainer} ${imageEditorStyle.compact}`}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Lower Hub Background Image:</span></legend>
           <div className="input-group mb-2">
             <input
               className="form-control"
@@ -495,8 +448,8 @@ export const EditEvent = () => {
               id="lowerHubBackground"
               name="lowerHubBackground"
               onChange={(event) =>
-                setEventDetails({
-                  ...eventDetails,
+                setPendingUploads({
+                  ...pendingUploads,
                   lowerHubBackground: event.target.files[0],
                 })
               }
@@ -509,67 +462,50 @@ export const EditEvent = () => {
                 handleUpload(
                   event,
                   "lowerHubBackground",
-                  eventDetails.lowerHubBackground
+                  pendingUploads.lowerHubBackground
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
-          <div className={eventStyle.imageNames}>
-            Current Image:{" "}
-            {OriginalFilesInList(eventDetails.lowerHubBackground)}
-          </div>
-        </div>
-        <div className={eventStyle.imageUploadContainer}>
-          <h6>Lower Hub Event Images:</h6>
-          <div className="input-group mb-2">
-            <input
-              className="form-control"
-              type="file"
-              multiple
-              id="lowerHubEventImages"
-              name="lowerHubEventImages"
-              onChange={(event) => {
-                const selectedFiles = Array.prototype.slice.call(
-                  event.target.files
-                );
-                setEventDetails({
-                  ...eventDetails,
-                  lowerHubEventImages: selectedFiles,
-                });
-              }}
-            ></input>
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="lowerHubEventImages"
-              onClick={(event) =>
-                handleMultipleUploads(
-                  event,
-                  "lowerHubEventImages",
-                  eventDetails.lowerHubEventImages
-                )
-              }
-            >
-              Upload
-            </button>
-          </div>
-          <div className={eventStyle.imageNames}>
-            Current Image(s):{" "}
-            {OriginalFilesInList(eventDetails.lowerHubEventImages)}
-          </div>
-        </div>
-        <section className={eventStyle.textInputContainer}>
-          <EditMemberProducts
-            eventURL={event_url}
-            setProductDetails={setProductDetails}
-          ></EditMemberProducts>
-        </section>
+          {eventDetails.lowerHubBackground && <ul className={imageEditorStyle.grid} aria-label="Uploaded background image">
+            <li className={imageEditorStyle.card}>
+              <EventImagePreview key={eventDetails.lowerHubBackground}
+                src={eventImageUrl(eventDetails.lowerHubBackground)} name={eventDetails.lowerHubBackground} />
+              <span className={imageEditorStyle.status}>Uploaded</span>
+            </li>
+          </ul>}
+        </fieldset>
+        <EventImageEditor key={`${event_url}-lower`} fieldName="lowerHubEventImages"
+          className={`${imageEditorStyle.compact} rounded-0 my-0`}
+          label={<span className="h6">Lower Hub Event Images:</span>}
+          imagePaths={eventDetails.lowerHubEventImages} disabled={saving || uploading > 0}
+          onChange={(paths) => setEventDetails((current) => ({ ...current, lowerHubEventImages: paths }))}
+          onBusyChange={handleGalleryBusy}
+          onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, lowerHubEventImages: pending }))} />
+        <fieldset className={eventStyle.textInputContainer}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event Products:</span></legend>
+          <EventProductTabs key={event_url} disabled={saving || uploading > 0}
+            nonMemberProducts={<EditMemberProducts audience="non-member" eventURL={event_url}
+              productTypes={productTypes}
+              productReceipt={nonMemberProductReceipt} setProductDetails={setNonMemberProductDetails}
+              onVersionLoaded={setNonMemberProductsVersion} onMissingUpload={showUploadWarning}
+              onBusyChange={handleGalleryBusy} />}>
+            <EditMemberProducts
+              productTypes={productTypes} productTargets={productTargets}
+              productReceipt={productReceipt}
+              eventURL={event_url}
+              setProductDetails={setProductDetails}
+              onMissingUpload={showUploadWarning}
+              onBusyChange={handleGalleryBusy}
+            ></EditMemberProducts>
+          </EventProductTabs>
+        </fieldset>
       </div>
       <div className={eventStyle.eventMenu}>
-        <div className={eventStyle.eventMenuItem}>
-          <h4>URL</h4>
+        <fieldset className={eventStyle.eventMenuItem}>
+          <legend className={eventStyle.boxHeading}><span className="h6">URL:</span></legend>
           <div className="input-group mb-3">
             <span className="input-group-text" id="basic-addon">
               ~/events/
@@ -583,17 +519,17 @@ export const EditEvent = () => {
               readOnly
             ></input>
           </div>
-        </div>
-        <div className={eventStyle.eventMenuItem}>
-          <h4>Visibility</h4>
+        </fieldset>
+        <fieldset className={eventStyle.eventMenuItem}>
+          <legend className={eventStyle.boxHeading}><span className="h6">Visibility:</span></legend>
           <div className="form-check">
             <input
               className="form-check-input"
               type="radio"
               name="visibilityOptions"
               id="unpublish"
-              defaultChecked
-              onChange={() => (eventDetails.isPublished = false)}
+              checked={!eventDetails.isPublished}
+              onChange={() => setEventDetails({ ...eventDetails, isPublished: false })}
             ></input>
             <label className="form-check-label" htmlFor="unpublish">
               Unpublish
@@ -605,7 +541,8 @@ export const EditEvent = () => {
               type="radio"
               name="visibilityOptions"
               id="publish"
-              onChange={() => (eventDetails.isPublished = true)}
+              checked={eventDetails.isPublished}
+              onChange={() => setEventDetails({ ...eventDetails, isPublished: true })}
             ></input>
             <label className="form-check-label" htmlFor="publish">
               Publish
@@ -628,10 +565,11 @@ export const EditEvent = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleUpdate}
           >
-            Update
+            <ActionLabel action="save">{saving ? "Saving..." : "Save"}</ActionLabel>
           </button>
-        </div>
+        </fieldset>
       </div>
-    </div>
+      <Popup ref={uploadWarningRef} title="Upload" message="Select a file before uploading." />
+    </fieldset>
   );
 };
