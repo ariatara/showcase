@@ -128,7 +128,8 @@ const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
       <h6>Member Products:</h6>
       {fields.map((item, index) => {
         return (
-          <div key={item.id} className="row gy-2 gx-2 justify-left">
+          <div key={item.id} className="member-product-row">
+            <div className="row gy-2 gx-2 m-0">
             <div className="col-4">
               <div className={eventStyle.imageNames}>Product Name:</div>
               <label
@@ -309,6 +310,7 @@ const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
                 {...register(`products.${index}.eventDate`, { required: true })}
               ></input>
               <p>{errors.products?.[index]?.eventDate?.message}</p>
+            </div>
             </div>
             <div className="col-auto">
               <button

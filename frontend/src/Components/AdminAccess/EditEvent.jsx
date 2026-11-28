@@ -10,6 +10,7 @@ import imageEditorStyle from "../../../css/EventImageEditor.module.css";
 import Popup from "../Popup";
 import { ServerLocation } from "../../Utilities/Locations";
 import EditMemberProducts from "./EditMemberProducts";
+import EventProductTabs from "./EventProductTabs";
 import UploadedFileNames from "./UploadedFileNames";
 import { eventFromRow } from "../../Utilities/EventValidation";
 import { saveEvent } from "../../Utilities/SaveEvent";
@@ -36,11 +37,16 @@ const eventEditorModules = {
 
 export const EditEvent = () => {
   const { showAlert } = usePopup("Edit Event");
+  const { showAlert: showProductAlert } = usePopup("Edit Event Products");
   const NavigateTo = useNavigate();
 
   const { event_url } = useParams();
   const [saving, setSaving] = useState(false);
   const [productReceipt, setProductReceipt] = useState();
+  const [nonMemberProductReceipt, setNonMemberProductReceipt] = useState();
+  const [nonMemberProductsVersion, setNonMemberProductsVersion] = useState();
+  const [productTypes, setProductTypes] = useState([]);
+  const [productTargets, setProductTargets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [uploading, setUploading] = useState(0);
@@ -77,6 +83,9 @@ export const EditEvent = () => {
     setLoading(true);
     setLoadError("");
     setPendingUploads({});
+    setProductReceipt(undefined);
+    setNonMemberProductReceipt(undefined);
+    setNonMemberProductsVersion(undefined);
     Axios.get(ServerLocation("/auth/events/url/" + encodeURIComponent(event_url)))
       .then((response) => {
         if (!response.data.Status || !response.data.Result?.length) {
@@ -95,6 +104,20 @@ export const EditEvent = () => {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [event_url]);
+
+  useEffect(() => {
+    if (loading || loadError) return;
+    let active = true;
+    for (const [endpoint, update] of [["productTypes", setProductTypes], ["membershipCategories", setProductTargets]]) {
+      Axios.get(ServerLocation(`/auth/${endpoint}`))
+        .then((response) => {
+          if (!response.data.Status) throw new Error(response.data.Error || "Product options could not be loaded.");
+          if (active) update(response.data.Result);
+        })
+        .catch((error) => { if (active) return showProductAlert(error.response?.data?.Error || error.message); });
+    }
+    return () => { active = false; };
+  }, [loading, loadError, showProductAlert]);
 
   const getEventURL = () => eventDetails.pageTitle.trim().replace(/ /g, "_").toLocaleLowerCase();
 
@@ -123,30 +146,30 @@ export const EditEvent = () => {
   };
 
   const setUpperHubContent = (value) => {
-    setEventDetails({
-      ...eventDetails,
-      upperHubContent: value,
-    });
+    setEventDetails((current) => current.upperHubContent === value ? current : { ...current, upperHubContent: value });
   };
 
   const setLowerHubContent = (value) => {
-    setEventDetails({
-      ...eventDetails,
-      lowerHubContent: value,
-    });
+    setEventDetails((current) => current.lowerHubContent === value ? current : { ...current, lowerHubContent: value });
   };
 
   const [productDetails, setProductDetails] = useState(null);
+  const [nonMemberProductDetails, setNonMemberProductDetails] = useState(null);
 
   const handleUpdate = async (event) => {
     event.preventDefault();
     if (saving || uploading) return;
     setSaving(true);
     try {
-      const result = await saveEvent({ details: eventDetails, products: productDetails, id: eventDetails.eventId });
+      const result = await saveEvent({ details: { ...eventDetails, nonMemberProductsVersion }, products: productDetails,
+        nonMemberProducts: nonMemberProductDetails, id: eventDetails.eventId });
       if (result.productReceipt) {
         setProductReceipt(result.productReceipt);
         setEventDetails((current) => ({ ...current, productsVersion: result.productReceipt.version }));
+      }
+      if (result.nonMemberProductReceipt) {
+        setNonMemberProductReceipt(result.nonMemberProductReceipt);
+        setNonMemberProductsVersion(result.nonMemberProductReceipt.version);
       }
       const pending = Object.values(pendingUploads).some((value) => value && (!Array.isArray(value) || value.length));
       if (result.warning || pending) {
@@ -165,7 +188,7 @@ export const EditEvent = () => {
   if (loadError) return <p role="alert">{loadError}</p>;
 
   return (
-    <fieldset className={eventStyle.createEvent} disabled={saving || uploading > 0}>
+    <fieldset className={`${eventStyle.createEvent} pb-5`} disabled={saving || uploading > 0}>
       <div className={eventStyle.eventContent}>
         <h4>Edit Event:</h4>
         <EventTemplateSelector value={eventDetails.viewTemplate} disabled={saving || uploading > 0}
@@ -462,13 +485,22 @@ export const EditEvent = () => {
           onBusyChange={handleGalleryBusy}
           onPendingChange={(pending) => setPendingUploads((current) => ({ ...current, lowerHubEventImages: pending }))} />
         <fieldset className={eventStyle.textInputContainer}>
-          <legend className={eventStyle.boxHeading}><span className="h6">Member Products:</span></legend>
-          <EditMemberProducts
-            productReceipt={productReceipt}
-            eventURL={event_url}
-            setProductDetails={setProductDetails}
-            onMissingUpload={showUploadWarning}
-          ></EditMemberProducts>
+          <legend className={eventStyle.boxHeading}><span className="h6">Event Products:</span></legend>
+          <EventProductTabs key={event_url} disabled={saving || uploading > 0}
+            nonMemberProducts={<EditMemberProducts audience="non-member" eventURL={event_url}
+              productTypes={productTypes}
+              productReceipt={nonMemberProductReceipt} setProductDetails={setNonMemberProductDetails}
+              onVersionLoaded={setNonMemberProductsVersion} onMissingUpload={showUploadWarning}
+              onBusyChange={handleGalleryBusy} />}>
+            <EditMemberProducts
+              productTypes={productTypes} productTargets={productTargets}
+              productReceipt={productReceipt}
+              eventURL={event_url}
+              setProductDetails={setProductDetails}
+              onMissingUpload={showUploadWarning}
+              onBusyChange={handleGalleryBusy}
+            ></EditMemberProducts>
+          </EventProductTabs>
         </fieldset>
       </div>
       <div className={eventStyle.eventMenu}>

@@ -2,6 +2,9 @@ import Express from "express";
 import AuthenticateToken from "../Middlewares/TokenValidation.js";
 import AuthorizeRoles from "../Middlewares/RoleAuthorization.js";
 import { ROLES } from "../Configurations/Roles.js";
+import DatastoreConnection, { createDatastoreConnection } from "../Utilities/Datastore.js";
+import { createProductTypeRouter } from "./ProductTypeRoutes.js";
+import { createNonMemberProductRouter } from "./NonMemberProductRoutes.js";
 import {
   accountAdminAccess,
   accountCountAdminAccess,
@@ -106,6 +109,8 @@ AdminRouter.get(
   AuthorizeRoles(ROLES.ADMINISTRATOR),
   productTypesAdminAccess
 );
+
+AdminRouter.use("/productTypes", createProductTypeRouter(DatastoreConnection));
 
 AdminRouter.get(
   "/membershipPrices",
@@ -304,5 +309,7 @@ AdminRouter.delete(
 );
 
 AdminRouter.get("/logout", logoutAdminAccess);
+
+AdminRouter.use("/nonMemberProducts", createNonMemberProductRouter(DatastoreConnection, createDatastoreConnection));
 
 export default AdminRouter;

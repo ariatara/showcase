@@ -1,5 +1,5 @@
 import ActionLabel from "../ActionLabel";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Axios from "axios";
 import { useForm, useFieldArray } from "react-hook-form";
 import "../../../css/AddProduct.css";
@@ -12,37 +12,14 @@ import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
 import { usePopup } from "../../Utilities/usePopup";
 
-const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, productReceipt }) => {
-  const { showAlert } = usePopup("Edit Member Products");
-  const [productTypes, setProductTypes] = useState([]);
+const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, productReceipt,
+  audience = "member", onVersionLoaded, onBusyChange, productTypes, productTargets = [] }) => {
+  const member = audience === "member";
+  const endpoint = member ? "memberProducts" : "nonMemberProducts";
+  const { showAlert } = usePopup(member ? "Edit Member Products" : "Edit Non-Member Products");
+  const formId = useId();
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
-
-  useEffect(() => {
-    Axios.get(ServerLocation("/auth/productTypes"))
-      .then(async (result) => {
-        if (result.data.Status) {
-          setProductTypes(result.data.Result);
-        } else {
-          await showAlert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-  }, [showAlert]);
-
-  const [productTargets, setProductTargets] = useState([]);
-
-  useEffect(() => {
-    Axios.get(ServerLocation("/auth/membershipCategories"))
-      .then(async (result) => {
-        if (result.data.Status) {
-          setProductTargets(result.data.Result);
-        } else {
-          await showAlert(result.data.Error);
-        }
-      })
-      .catch((error) => console.log(error));
-  }, [showAlert]);
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
@@ -52,6 +29,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
       return null;
     }
 
+    onBusyChange?.(true);
     try {
       const uploadedFileName = await UploadFileByFieldName(
         fieldName,
@@ -64,6 +42,8 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
     } catch (error) {
       await showAlert(error.response?.data?.Error || error.message);
       return null;
+    } finally {
+      onBusyChange?.(false);
     }
   };
 
@@ -73,7 +53,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
         productName: Yup.string().required("Name is required"),
         productType: Yup.string().required("Type is required"),
         productImage: Yup.string(),
-        productTarget: Yup.string().required("Target is required"),
+        ...(member ? { productTarget: Yup.string().required("Target is required") } : {}),
         productPrice: Yup.number()
           .typeError("Price must be a number")
           .positive("Price must be a positive number")
@@ -120,17 +100,20 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
     setLoaded(false);
     setLoadError("");
     setProductDetails(null);
-    Axios.get(ServerLocation("auth/memberProducts/" + encodeURIComponent(eventURL)))
+    Axios.get(ServerLocation(`auth/${endpoint}/` + encodeURIComponent(eventURL)))
       .then((response) => {
         if (!active) return;
         if (response.data.Status) {
+          if (!member && (!Number.isSafeInteger(response.data.Version) || response.data.Version < 1)) {
+            throw new Error("Product collection version is missing. Reload the event before saving.");
+          }
           const mappedProducts = response.data.Result.map((item) => ({
             productId: item.id,
             version: item.version,
             productName: item.name || "",
             productType: item.type || "",
             productImage: item.image_name || "",
-            productTarget: item.target || "",
+            ...(member ? { productTarget: item.target || "" } : {}),
             productPrice: item.price || 0,
             productInventory: item.inventory || 0,
             eventURL: item.event_url || eventURL,
@@ -138,6 +121,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
           }));
           setValue("products", mappedProducts);
           setProductDetails(mappedProducts);
+          if (!member) onVersionLoaded?.(response.data.Version);
           setLoaded(true);
         } else {
           setLoadError(response.data.Error);
@@ -147,7 +131,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
         if (active) setLoadError(error.response?.data?.Error || error.message);
       });
     return () => { active = false; };
-  }, [eventURL, setValue, setProductDetails]);
+  }, [eventURL, setValue, setProductDetails, endpoint, member, onVersionLoaded]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -171,20 +155,22 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
       onSubmit={handleSubmit(onSubmit)}
     >
       {fields.map((item, index) => {
+        const rowId = `${formId}-${item.id}`;
         return (
-          <div key={item.id} className="row gy-2 gx-2 justify-left">
+          <div key={item.id} className="member-product-row">
+            <div className="row gy-2 gx-2 m-0">
             <div className="col-4">
               <div className={eventStyle.imageNames}>Product Name:</div>
               <label
                 className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                htmlFor="autoSizingInput"
+                htmlFor={`${rowId}-name`}
               >
                 Product Name
               </label>
               <input
                 type="text"
                 className="form-control form-control-sm"
-                id="autoSizingInput"
+                id={`${rowId}-name`}
                 placeholder="Enter Name"
                 {...register(`products.${index}.productName`, {
                   required: true,
@@ -196,14 +182,14 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
               <div className={eventStyle.imageNames}>Product Type:</div>
               <label
                 className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                htmlFor="productType"
+                htmlFor={`${rowId}-type`}
               >
                 Product Type
               </label>
               <select
                 type="text"
-                className="form-control form-control-sm form-select"
-                id="productType"
+                className="form-control form-control-sm form-select product-type-select"
+                id={`${rowId}-type`}
                 defaultValue=""
                 placeholder="Select Type"
                 {...register(`products.${index}.productType`, {
@@ -229,7 +215,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
               <div className="input-group mb-2">
                 <label
                   className="visually-hidden col-sm-2 col-form-label-sm"
-                  htmlFor="productImage"
+                  htmlFor={`${rowId}-image`}
                 >
                   Product Image
                 </label>
@@ -237,14 +223,13 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
                   type="file"
                   accept="image/*"
                   className="form-control form-control-sm"
-                  id="productImage"
+                  id={`${rowId}-image`}
                   placeholder="Product Image"
                   {...register(`products.${index}.productImage`)}
                 ></input>
                 <button
                   className="btn btn-outline-secondary"
                   type="button"
-                  id="productImage"
                   onClick={async (event) => {
                     const imageFile = getValues(
                       `products.${index}.productImage`
@@ -267,18 +252,18 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
                 <p>{errors.products?.[index]?.productImage?.message}</p>
               </div>
             </div>
-            <div className="col-3">
+            {member && <div className="col-3">
               <div className={eventStyle.imageNames}>Product Target:</div>
               <label
                 className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                htmlFor="productTarget"
+                htmlFor={`${rowId}-target`}
               >
                 Product Target
               </label>
               <select
                 type="text"
-                className="form-control form-control-sm form-select"
-                id="productTarget"
+                className="form-control form-control-sm form-select product-target-select"
+                id={`${rowId}-target`}
                 defaultValue=""
                 placeholder="Select Target"
                 {...register(`products.${index}.productTarget`, {
@@ -293,13 +278,13 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
                 })}
               </select>
               <p>{errors.products?.[index]?.productTarget?.message}</p>
-            </div>
+            </div>}
             <div className="col-3">
               <div className={eventStyle.imageNames}>Product Price:</div>
               <div className="input-group mb-2">
                 <label
                   className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                  htmlFor="productPrice"
+                  htmlFor={`${rowId}-price`}
                 >
                   Product Price
                 </label>
@@ -309,7 +294,7 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
                 <input
                   type="decimal"
                   className="form-control form-control-sm"
-                  id="productPrice"
+                  id={`${rowId}-price`}
                   placeholder="Enter Price"
                   {...register(`products.${index}.productPrice`, {
                     required: true,
@@ -322,14 +307,14 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
               <div className={eventStyle.imageNames}>Product Inventory:</div>
               <label
                 className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                htmlFor="productInventory"
+                htmlFor={`${rowId}-inventory`}
               >
                 Product Inventory
               </label>
               <input
                 type="integer"
                 className="form-control form-control-sm"
-                id="productInventory"
+                id={`${rowId}-inventory`}
                 placeholder="Enter Inventory"
                 {...register(`products.${index}.productInventory`, {
                   required: true,
@@ -341,26 +326,29 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
               <div className={eventStyle.imageNames}>Event Date:</div>
               <label
                 className="visually-hidden col-sm-2 col-form-label col-form-label-sm"
-                htmlFor="eventDate"
+                htmlFor={`${rowId}-date`}
               >
                 Event Date
               </label>
               <input
                 type="date"
                 className="form-control form-control-sm"
-                id="eventDate"
+                id={`${rowId}-date`}
                 placeholder="Select Date"
                 {...register(`products.${index}.eventDate`, { required: true })}
               ></input>
               <p>{errors.products?.[index]?.eventDate?.message}</p>
             </div>
+            </div>
             <div className="col-auto">
               <button
                 type="button"
                 className="btn btn-danger"
+                aria-label={`Delete ${member ? "member" : "non-member"} product ${index + 1}`}
+                title="Delete product"
                 onClick={() => remove(index)}
               >
-                <i className="bi bi-trash"></i>
+                <i className="bi bi-trash" aria-hidden="true"></i>
               </button>
             </div>
           </div>
@@ -370,9 +358,12 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => append({})}
+          aria-label={`Add ${member ? "member" : "non-member"} product`}
+          title={`Add ${member ? "member" : "non-member"} product`}
+          onClick={() => append({ productName: "", productType: "", productImage: "", ...(member ? { productTarget: "" } : {}),
+            productPrice: "", productInventory: "", eventDate: "" })}
         >
-          <i className="bi bi-plus-lg"></i>
+          <i className="bi bi-plus-lg" aria-hidden="true"></i>
         </button>
       </div>
       {/*
@@ -387,6 +378,11 @@ const EditMemberProduct = ({ eventURL, setProductDetails, onMissingUpload, produ
 };
 
 EditMemberProduct.propTypes = {
+  productTypes: PropTypes.array.isRequired,
+  productTargets: PropTypes.array,
+  audience: PropTypes.oneOf(["member", "non-member"]),
+  onVersionLoaded: PropTypes.func,
+  onBusyChange: PropTypes.func,
   productReceipt: PropTypes.shape({ products: PropTypes.array.isRequired }),
   eventURL: PropTypes.string.isRequired,
   setProductDetails: PropTypes.func.isRequired,

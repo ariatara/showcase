@@ -3,21 +3,41 @@ import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { usePopup } from "../../Utilities/usePopup";
+import { ServerLocation } from "../../Utilities/Locations";
 
 const ProductTypes = () => {
-  const { showAlert } = usePopup("Product Types");
+  const { showAlert, showConfirm } = usePopup("Product Types");
   const [productTypes, setProductTypes] = useState([]);
+  const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(null);
   useEffect(() => {
-    Axios.get("http://localhost:3000/auth/productTypes")
-      .then(async (result) => {
-        if (result.data.Status) {
-          setProductTypes(result.data.Result);
-        } else {
-          await showAlert(result.data.Error);
-        }
+    const controller = new AbortController();
+    Axios.get(ServerLocation("/auth/productTypes"), { signal: controller.signal })
+      .then(({ data }) => {
+        if (!data.Status) throw new Error(data.Error || "Get product types failed.");
+        if (!controller.signal.aborted) setProductTypes(data.Result);
       })
-      .catch((error) => console.log(error));
-  }, [showAlert]);
+      .catch((failure) => {
+        if (!controller.signal.aborted) setError(failure.response?.data?.Error || failure.message);
+      });
+    return () => controller.abort();
+  }, []);
+
+  const handleDelete = async (productType) => {
+    if (deleting !== null) return;
+    setDeleting(productType.id);
+    try {
+      if (!await showConfirm(`Delete product type "${productType.type}"? This cannot be undone.`,
+        { title: "Delete Product Type", confirmLabel: "Delete", confirmAction: "delete" })) return;
+      const { data } = await Axios.delete(ServerLocation(`/auth/productTypes/${productType.id}`));
+      if (!data.Status) throw new Error(data.Error || "Delete product type failed.");
+      setProductTypes((current) => current.filter((item) => item.id !== productType.id));
+    } catch (failure) {
+      await showAlert(failure.response?.data?.Error || failure.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div className="px-5 mt-3">
@@ -31,6 +51,7 @@ const ProductTypes = () => {
         <ActionLabel action="add">Add Product Type</ActionLabel>
       </Link>
       <div className="mt-3">
+        {error && <p role="alert" className="text-warning">{error}</p>}
         <table className="table">
           <thead>
             <tr>
@@ -44,14 +65,15 @@ const ProductTypes = () => {
                 <td>{x.type}</td>
                 <td>
                   <Link
-                    //to={"/adminDashboard/editEmployee/" + value.id}
+                    to={"/adminDashboard/editProductType/" + x.id}
                     className="btn btn-success btn-sm me-2"
                   >
                     <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
                     className="btn btn-danger btn-sm"
-                    //onClick={() => handleDelete(value.id)}
+                    disabled={deleting !== null}
+                    onClick={() => handleDelete(x)}
                   >
                     <ActionLabel action="delete">Delete</ActionLabel>
                   </button>

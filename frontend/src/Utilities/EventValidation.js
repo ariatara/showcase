@@ -52,7 +52,8 @@ export function missingEventFields(payload) {
 }
 
 export function eventFromRow(row) {
-  const details = { eventId: row.id, productsVersion: row.products_version ?? 1, isPublished: row.published === true || row.published === 1 };
+  const details = { eventId: row.id, productsVersion: row.products_version ?? 1,
+    nonMemberProductsVersion: row.non_member_products_version ?? 1, isPublished: row.published === true || row.published === 1 };
   for (const [key, column] of Object.entries(fieldColumns)) {
     details[key] = row[column] ?? (key === "viewTemplate" ? DEFAULT_EVENT_TEMPLATE : "");
   }
@@ -61,9 +62,9 @@ export function eventFromRow(row) {
   return details;
 }
 
-export function completeProducts(products) {
+export function completeProducts(products, { requiresTarget = true } = {}) {
   return Array.isArray(products) && products.every((product) => {
-    if (!product || !["productName", "productType", "productTarget", "eventDate"].every(
+    if (!product || !["productName", "productType", ...(requiresTarget ? ["productTarget"] : []), "eventDate"].every(
       (key) => typeof product[key] === "string" && product[key].trim()
     )) return false;
     const date = new Date(`${product.eventDate}T00:00:00Z`);

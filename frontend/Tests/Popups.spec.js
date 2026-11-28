@@ -135,7 +135,7 @@ test("concurrent errors are queued rather than replacing an open popup", async (
   await page.goto("/adminDashboard/editEvent/gallery_event");
   const messages = [];
   for (let index = 0; index < 2; index++) {
-    const dialog = page.getByRole("alertdialog", { name: "Edit Member Products", exact: true });
+    const dialog = page.getByRole("alertdialog", { name: "Edit Event Products", exact: true });
     await expect(dialog).toBeVisible();
     messages.push(await dialog.locator("p").innerText());
     await dialog.getByRole("button", { name: "OK", exact: true }).click();

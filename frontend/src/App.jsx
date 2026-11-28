@@ -43,6 +43,7 @@ import { CreatePage } from "./Components/AdminAccess/CreatePage";
 import { EditEvent } from "./Components/AdminAccess/EditEvent";
 import ProductTypes from "./Components/AdminAccess/ProductTypes";
 import AddProductType from "./Components/AdminAccess/AddProductType";
+import EditProductType from "./Components/AdminAccess/EditProductType";
 import CommerceSettings from "./Components/AdminAccess/CommerceSettings";
 import PopupProvider from "./Components/PopupProvider";
 
@@ -90,6 +91,7 @@ function App() {
           <Route path="productTypes" element={<ProductTypes />}></Route>
           <Route path="commerce" element={<CommerceSettings />}></Route>
           <Route path="addProductType" element={<AddProductType />}></Route>
+          <Route path="editProductType/:id" element={<EditProductType />}></Route>
           <Route path="editAccount/:id" element={<EditAccount />}></Route>
           <Route path="accounts" element={<Accounts />}></Route>
           <Route

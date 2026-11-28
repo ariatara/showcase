@@ -1,11 +1,11 @@
 import { cents, dollars, integer, CommerceError } from "./CommerceMoney.js";
 
-export function validateMemberProducts(products) {
+function validateProducts(products, member) {
   if (!Array.isArray(products) || products.length > 100) throw new CommerceError(400, "Products must be a list of at most 100 product details.");
   const ids = new Set();
   return products.map((product) => {
     if (!product || typeof product !== "object") throw new CommerceError(400, "Product details are required.");
-    for (const [key, limit] of Object.entries({ productName: 512, productType: 256, productTarget: 128 })) {
+    for (const [key, limit] of Object.entries({ productName: 512, productType: 256, ...(member ? { productTarget: 128 } : {}) })) {
       if (typeof product[key] !== "string" || !product[key].trim() || [...product[key]].length > limit) {
         throw new CommerceError(400, `Complete ${key} (at most ${limit} characters).`);
       }
@@ -27,3 +27,6 @@ export function validateMemberProducts(products) {
       productInventory: integer(product.productInventory, "Inventory", 0, 2147483647) };
   });
 }
+
+export const validateMemberProducts = (products) => validateProducts(products, true);
+export const validateNonMemberProducts = (products) => validateProducts(products, false);

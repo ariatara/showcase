@@ -184,8 +184,19 @@ for (const upgrade of [false, true]) {
       await db.query("INSERT INTO product_types (`type`) VALUES ('Ticket')");
       await db.query("INSERT IGNORE INTO membership_categories (category) VALUES ('Member')");
       const product = { productName: "Admission", productType: "Ticket", productTarget: "Member",
-        productPrice: 10, productInventory: 5, eventDate: "2026-04-01" };
-      await replaceMemberProducts(db, "fair", [product]);
+        productPrice: "12.75", productInventory: 5, eventDate: "2026-04-01" };
+      await t.test("adding a member product preserves cents and returns versions for reopening", async () => {
+        const [[event]] = await db.query("SELECT products_version FROM events WHERE id = ?", [id]);
+        const saved = await replaceMemberProducts(db, "fair", [product], String(event.products_version));
+        assert.equal(saved.products.length, 1);
+        assert.equal(saved.version, event.products_version + 1);
+        const [[stored]] = await db.query("SELECT id, name, price, active, version FROM member_products WHERE event_url = ? AND active = TRUE", ["fair"]);
+        assert.equal(stored.id, saved.products[0].productId);
+        assert.equal(stored.name, "Admission");
+        assert.equal(stored.price, "12.75");
+        assert.equal(stored.version, saved.products[0].version);
+        assert.equal(stored.active, 1);
+      });
       await assert.rejects(replaceMemberProducts(db, "fair", [{ ...product, productType: "Missing" }]));
       const [[count]] = await db.query("SELECT COUNT(*) AS count FROM member_products WHERE event_url = 'fair'");
       assert.equal(count.count, 1);

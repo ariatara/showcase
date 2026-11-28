@@ -196,7 +196,7 @@ test("all edit box headings match the lower gallery border title without changin
     for (const title of [
       "Event Start:", "Event End:", "Banner Background Image:", "Upper Hub Content:",
       "Upper Hub Background Image:", "Upper Hub Event Images:", "Lower Hub Content:",
-      "Lower Hub Background Image:", "Lower Hub Event Images:", "Member Products:", "URL:", "Visibility:",
+      "Lower Hub Background Image:", "Lower Hub Event Images:", "Event Products:", "URL:", "Visibility:",
     ]) {
       const box = page.getByRole("group", { name: title, exact: true });
       const legend = box.locator(":scope > legend");
@@ -231,7 +231,7 @@ test("edit galleries use the same section gap before adjacent content", async ({
   const background = page.getByRole("group", { name: "Upper Hub Background Image:", exact: true });
   const lowerContent = page.getByRole("group", { name: "Lower Hub Content:", exact: true });
   const lowerBackground = page.getByRole("group", { name: "Lower Hub Background Image:", exact: true });
-  const products = page.getByRole("group", { name: "Member Products:", exact: true });
+  const products = page.getByRole("group", { name: "Event Products:", exact: true });
   for (const width of [768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const contentBox = await content.boundingBox();

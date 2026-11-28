@@ -2,7 +2,7 @@ import Axios from "axios";
 import { ServerLocation } from "./Locations.js";
 import { prepareEventPayload, missingEventFields, completeProducts } from "./EventValidation.js";
 
-export async function saveEvent({ details, products, id }, client = Axios) {
+export async function saveEvent({ details, products, nonMemberProducts, id }, client = Axios) {
   const payload = prepareEventPayload(details);
   const missing = missingEventFields(payload);
   if (missing.length) throw new Error(`Complete the following fields: ${missing.join(", ")}.`);
@@ -13,21 +13,29 @@ export async function saveEvent({ details, products, id }, client = Axios) {
   const saved = response.data.Result;
   if (!saved?.id || !saved.url) throw new Error("Event save returned no ID or URL. Reload the event list before retrying.");
   const result = { id: saved.id, url: saved.url, warning: "" };
-  if (!completeProducts(products)) {
-    result.warning = "Event saved. Products were not saved; complete all product rows and save again.";
-    return result;
+  const collections = [{ rows: products, endpoint: "memberProducts", version: details.productsVersion ?? 1,
+    receipt: "productReceipt", label: "Products", requiresTarget: true }];
+  if (nonMemberProducts !== undefined) collections.push({ rows: nonMemberProducts, endpoint: "nonMemberProducts",
+    version: details.nonMemberProductsVersion, receipt: "nonMemberProductReceipt", label: "Non-member products", requiresTarget: false });
+  const warnings = [];
+  for (const collection of collections) {
+    if (!completeProducts(collection.rows, { requiresTarget: collection.requiresTarget })) {
+      warnings.push(`Event saved. ${collection.label} were not saved; complete all product rows and save again.`);
+      continue;
+    }
+    if (!id && collection.rows.length === 0) continue;
+    const productPayload = collection.rows.map((product) => ({ ...product, eventURL: saved.url }));
+    const options = { headers: { "X-Product-Version": collection.version } };
+    try {
+      const productResponse = !id && collection.requiresTarget
+        ? await client.post(ServerLocation("/auth/memberProducts"), productPayload, options)
+        : await client.put(ServerLocation(`/auth/${collection.endpoint}/${encodeURIComponent(saved.url)}`), productPayload, options);
+      if (!productResponse.data.Status) throw new Error(productResponse.data.Error || "Product save failed.");
+      if (productResponse.data.Result) result[collection.receipt] = productResponse.data.Result;
+    } catch (error) {
+      warnings.push(`Event saved, but ${collection.label.toLowerCase()} were not saved: ${error.response?.data?.Error || error.message}`);
+    }
   }
-  if (!id && products.length === 0) return result;
-  const productPayload = products.map((product) => ({ ...product, eventURL: saved.url }));
-  const options = { headers: { "X-Product-Version": details.productsVersion ?? 1 } };
-  try {
-    const productResponse = id
-      ? await client.put(ServerLocation(`/auth/memberProducts/${encodeURIComponent(saved.url)}`), productPayload, options)
-      : await client.post(ServerLocation("/auth/memberProducts"), productPayload, options);
-    if (!productResponse.data.Status) throw new Error(productResponse.data.Error || "Product save failed.");
-    if (productResponse.data.Result) result.productReceipt = productResponse.data.Result;
-  } catch (error) {
-    result.warning = `Event saved, but products were not saved: ${error.response?.data?.Error || error.message}`;
-  }
+  result.warning = warnings.join("\n");
   return result;
 }

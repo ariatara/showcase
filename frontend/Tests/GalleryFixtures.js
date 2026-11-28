@@ -48,9 +48,10 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
       upper_hub_content: "Upper hub text", lower_hub_content: "Lower hub text",
       upper_hub_event_image_names: paths("upper", upper).join(",") || null,
       lower_hub_event_image_names: paths("lower", lower).join(",") || null,
-      published: 1, view_template: "classic", products_version: 1,
+      published: 1, view_template: "classic", products_version: 1, non_member_products_version: 1,
     },
     writes: [], uploadAttempts: [], uploadNames: [], failUploads: new Set(), failSave: false, uploadGate: null,
+    nonMemberProducts: [], nonMemberWrites: [], failNonMemberSave: false, failNonMemberLoad: false,
   };
   await page.addInitScript(() => {
     sessionStorage.setItem("loginSession", JSON.stringify({
@@ -110,6 +111,26 @@ export async function galleryFixture(page, { upper = 3, lower = 3 } = {}) {
     }
     if (path === "/auth/events") return route.fulfill({ json: { Status: true, Result: [state.row] } });
     if (path === "/account/commerce/context") return route.fulfill({ status: 401, json: { Status: false, Error: "Sign in to purchase." } });
+    if (path.startsWith("/auth/nonMemberProducts/")) {
+      if (method === "GET") {
+        if (state.failNonMemberLoad) return route.fulfill({ status: 500, json: { Status: false, Error: "Non-member products unavailable." } });
+        return route.fulfill({ json: { Status: true, Result: state.nonMemberProducts, Version: state.row.non_member_products_version } });
+      }
+      if (method !== "PUT") throw new Error(`Unexpected non-member method: ${method}`);
+      const products = route.request().postDataJSON();
+      const version = Number(route.request().headers()["x-product-version"]);
+      state.nonMemberWrites.push({ products, version });
+      if (state.failNonMemberSave || version !== state.row.non_member_products_version) {
+        return route.fulfill({ status: 409, json: { Status: false, Error: "Non-member products changed. Reopen the event." } });
+      }
+      const saved = products.map((product, index) => ({ ...product, productId: product.productId ?? 201 + index,
+        version: (product.version ?? 0) + 1 }));
+      state.nonMemberProducts = saved.map((product) => ({ id: product.productId, version: product.version,
+        name: product.productName, type: product.productType, image_name: product.productImage,
+        price: product.productPrice, inventory: product.productInventory, event_date: product.eventDate }));
+      state.row.non_member_products_version++;
+      return route.fulfill({ json: { Status: true, Result: { products: saved, version: state.row.non_member_products_version } } });
+    }
     if (path.startsWith("/auth/memberProducts") && method === "PUT") {
       state.row.products_version++;
       return route.fulfill({ json: { Status: true, Result: { products: [], version: state.row.products_version } } });

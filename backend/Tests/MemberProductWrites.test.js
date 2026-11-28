@@ -1,6 +1,46 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { replaceMemberProducts } from "../Utilities/MemberProductWrites.js";
+import { replaceMemberProducts, replaceNonMemberProducts } from "../Utilities/MemberProductWrites.js";
+import { validateNonMemberProducts } from "../Utilities/MemberProductValidation.js";
+
+test("non-member products validate shared fields without a membership target", () => {
+  const product = { productName: "Guest ticket", productType: "Ticket", productPrice: "12.75",
+    productInventory: 0, eventDate: "2026-12-01" };
+  assert.equal(validateNonMemberProducts([product])[0].productPrice, "12.75");
+  for (const patch of [{ productPrice: "1.001" }, { productInventory: -1 }, { productName: "" },
+    { eventDate: "2026-02-30" }, { productImage: "../file.png" }, { productId: 1, version: 0 }]) {
+    assert.throws(() => validateNonMemberProducts([{ ...product, ...patch }]));
+  }
+  assert.throws(() => validateNonMemberProducts(null));
+});
+
+test("non-member writes use their own table and collection version, retaining product IDs", async () => {
+  const queries = [];
+  const db = {
+    async beginTransaction() { queries.push("BEGIN"); },
+    async query(sql, values) {
+      queries.push(sql);
+      if (sql.startsWith("SELECT id, non_member_products_version")) return [[{ id: 7, non_member_products_version: 3 }]];
+      if (sql.startsWith("SELECT id, version")) return [[]];
+      if (sql.startsWith("INSERT")) {
+        assert.equal(values[5], "fair");
+        return [{ insertId: 55 }];
+      }
+      return [{ affectedRows: 1 }];
+    },
+    async commit() { queries.push("COMMIT"); },
+    async rollback() { assert.fail("Unexpected rollback"); },
+  };
+  const result = await replaceNonMemberProducts(db, "fair", [{ productName: "Guest ticket", productType: "Ticket",
+    productPrice: "12.75", productInventory: 5, eventDate: "2026-12-01", eventURL: "untrusted" }], "3");
+  assert.equal(result.version, 4);
+  assert.equal(result.products[0].productId, 55);
+  assert.equal(result.products[0].version, 1);
+  assert.ok(queries.some((sql) => sql.startsWith("INSERT INTO non_member_products")));
+  assert.ok(queries.some((sql) => sql.startsWith("UPDATE non_member_products SET active")));
+  assert.ok(queries.every((sql) => !/\bmember_products\b|commerce_reservations/.test(sql)));
+  assert.equal(queries.at(-1), "COMMIT");
+});
 
 test("replaceMemberProducts retires all products on an explicit empty list without an empty INSERT", async () => {
   const queries = [];

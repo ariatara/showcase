@@ -6,6 +6,53 @@ const details = { pageTitle: "Fair" };
 const products = [{ productName: "Ticket", productType: "Adult", productTarget: "Member",
   productPrice: 10, productInventory: 2, eventDate: "2026-04-01" }];
 
+test("Save persists both audiences independently without requiring a non-member target", async () => {
+  const nonMemberProducts = products.map(({ productTarget, ...product }) => { assert.ok(productTarget); return product; });
+  const calls = [];
+  const client = { async put(url, body, options) {
+    calls.push({ url, body, options });
+    if (url.endsWith("/events/3")) return { data: { Status: true, Result: { id: 3, url: "fair" } } };
+    return { data: { Status: true, Result: { products: body, version: options.headers["X-Product-Version"] + 1 } } };
+  } };
+  const result = await saveEvent({ id: 3, details: { ...details, productsVersion: 4, nonMemberProductsVersion: 8 },
+    products, nonMemberProducts }, client);
+  assert.equal(calls.length, 3);
+  assert.ok(calls[1].url.endsWith("/memberProducts/fair"));
+  assert.ok(calls[2].url.endsWith("/nonMemberProducts/fair"));
+  assert.equal(calls[2].body[0].eventURL, "fair");
+  assert.equal(Object.hasOwn(calls[2].body[0], "productTarget"), false);
+  assert.equal(result.productReceipt.version, 5);
+  assert.equal(result.nonMemberProductReceipt.version, 9);
+  assert.equal(result.warning, "");
+});
+
+test("a failed non-member save returns the member receipt and a retryable warning", async () => {
+  const result = await saveEvent({ id: 3, details, products, nonMemberProducts: products }, { async put(url) {
+    if (url.includes("/nonMemberProducts/")) throw new Error("Non-member products changed. Reopen the event.");
+    return { data: { Status: true, Result: url.includes("/events/") ? { id: 3, url: "fair" } : { products, version: 2 } } };
+  } });
+  assert.equal(result.productReceipt.version, 2);
+  assert.equal(result.nonMemberProductReceipt, undefined);
+  assert.match(result.warning, /non-member products were not saved.*changed/i);
+});
+
+test("unloaded non-member lists never clear data but an explicit empty list does", async () => {
+  for (const nonMemberProducts of [null, []]) {
+    const calls = [];
+    const result = await saveEvent({ id: 3, details, products: [], nonMemberProducts }, { async put(url, body) {
+      calls.push({ url, body });
+      return { data: { Status: true, Result: { id: 3, url: "fair" } } };
+    } });
+    if (nonMemberProducts === null) {
+      assert.equal(calls.length, 2);
+      assert.match(result.warning, /non-member products were not saved/i);
+    } else {
+      assert.equal(calls.length, 3);
+      assert.deepEqual(calls[2].body, []);
+    }
+  }
+});
+
 test("saveEvent waits for the event and supplies its URL to products", async () => {
   const calls = [];
   const client = { async post(url, body) {
