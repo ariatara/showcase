@@ -1,9 +1,12 @@
-import { useState } from "react";
+import ActionLabel from "../ActionLabel";
+import { useEffect, useRef, useState } from "react";
 import Axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { localReturn } from "../../Utilities/CommerceApi";
 import { Eye, EyeSlash } from "phosphor-react";
 import { ROLES } from "../../Configurations/Roles";
 import loginStyle from "../../../css/Login.module.css";
+import Popup from "../Popup";
 
 const AccountLogin = () => {
   const [accountDetails, setAccountDetails] = useState({
@@ -14,11 +17,75 @@ const AccountLogin = () => {
   const [error, setError] = useState();
   const [showPassword, setShowPassword] = useState(false);
   const [hasAcceptedAgreement, setHasAcceptedAgreement] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const loginFormRef = useRef(null);
+  const loginNotificationRef = useRef(null);
+  const dragRef = useRef(null);
   const NavigateTo = useNavigate();
+  const returnTo = localReturn(new URLSearchParams(useLocation().search).get("returnTo"));
   Axios.defaults.withCredentials = true;
+
+  useEffect(() => {
+    const resetPosition = () => {
+      dragRef.current = null;
+      setIsDragging(false);
+      setPosition({ x: 0, y: 0 });
+    };
+    window.addEventListener("resize", resetPosition);
+    return () => window.removeEventListener("resize", resetPosition);
+  }, []);
+
+  const handleDragStart = (event) => {
+    if (event.button !== 0 || !event.isPrimary || dragRef.current) return;
+    if (event.target.closest("input, button, a, label, [data-no-drag]")) return;
+
+    const bounds = loginFormRef.current.getBoundingClientRect();
+    const topBoundary =
+      document.getElementById("MainNavigation")?.getBoundingClientRect().bottom ?? 0;
+    const minX = position.x - bounds.left;
+    const minY = position.y - bounds.top + topBoundary;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX - position.x,
+      startY: event.clientY - position.y,
+      minX,
+      minY,
+      maxX: minX + Math.max(0, document.documentElement.clientWidth - bounds.width),
+      maxY: minY + Math.max(0, window.innerHeight - topBoundary - bounds.height),
+    };
+    setIsDragging(true);
+    event.preventDefault();
+  };
+
+  const handleDragMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      handleDragEnd(event);
+      return;
+    }
+
+    setPosition({
+      x: Math.max(drag.minX, Math.min(drag.maxX, event.clientX - drag.startX)),
+      y: Math.max(drag.minY, Math.min(drag.maxY, event.clientY - drag.startY)),
+    });
+  };
+
+  const handleDragEnd = (event) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      setIsDragging(false);
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const handleLogin = (event) => {
     event.preventDefault();
+    setError(undefined);
     Axios.post("http://localhost:3000/user", accountDetails)
       .then((result) => {
         if (result.data.login_status) {
@@ -30,7 +97,7 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/adminDashboard");
+            NavigateTo(returnTo || "/adminDashboard");
           } else if (
             result.data.account_roles.includes(ROLES.MEMBER) ||
             result.data.account_roles.includes(ROLES.NONMEMBER)
@@ -42,13 +109,20 @@ const AccountLogin = () => {
                 expiry: result.data.login_expiry,
               })
             );
-            NavigateTo("/accountDashboard/" + accountDetails.account_email);
+            NavigateTo(returnTo || "/accountDashboard/" + accountDetails.account_email);
           }
         } else {
           setError(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          loginNotificationRef.current?.showModal();
+        } else {
+          console.log(error);
+          setError("Unable to sign in. Please try again.");
+        }
+      });
   };
 
   return (
@@ -56,12 +130,21 @@ const AccountLogin = () => {
       className={`${loginStyle.loginPage} d-flex justify-content-center align-items-center vh-100`}
     >
       <div
-        className={`${loginStyle.loginForm} p-5 rounded-5 border text-orangered`}
+        ref={loginFormRef}
+        className={`${loginStyle.loginForm} ${isDragging ? loginStyle.dragging : ""} p-5 rounded-5 border text-orangered`}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onLostPointerCapture={handleDragEnd}
       >
         <div className={`${loginStyle.loginError} text-warning`}>
-          {error && error}
+          {error && <span data-no-drag>{error}</span>}
         </div>
-        <h3>Account Login</h3>
+        <h3>
+          <span data-no-drag>Account Login</span>
+        </h3>
         <form onSubmit={handleLogin}>
           <div className="emailForm my-3">
             <input
@@ -123,7 +206,7 @@ const AccountLogin = () => {
                 required
               />
               <label htmlFor="tick">
-                I have read the Membership Agreement
+                I have read the Uttoron Account Agreement
               </label>
             </div>
             <div>
@@ -136,7 +219,7 @@ const AccountLogin = () => {
                   !hasAcceptedAgreement
                 }
               >
-                Sign In
+                <ActionLabel action="login">Sign In</ActionLabel>
               </button>
             </div>
             <Link
@@ -148,6 +231,7 @@ const AccountLogin = () => {
           </div>
         </form>
       </div>
+      <Popup ref={loginNotificationRef} title="Sign In" message="Wrong username or password" />
     </div>
   );
 };

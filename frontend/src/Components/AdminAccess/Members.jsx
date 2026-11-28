@@ -1,21 +1,24 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Members = () => {
+  const { showAlert } = usePopup("Members");
   const [members, setMembers] = useState([]);
 
   useEffect(() => {
     Axios.get("http://localhost:3000/auth/members")
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setMembers(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   /*
   const handleDelete = (id) => {
@@ -63,15 +66,15 @@ const Members = () => {
                 <td>
                   <Link
                     //to={"/adminDashboard/editMember/" + member.id}
-                    className="btn btn-info btn-sm me-2"
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
-                    className="btn btn-warning btn-sm"
+                    className="btn btn-danger btn-sm"
                     //onClick={() => handleDelete(member.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

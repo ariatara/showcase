@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import Axios from "axios";
 import { useEffect, useState, useCallback } from "react";
 import "react-quill/dist/quill.snow.css";
@@ -5,8 +6,10 @@ import { useNavigate } from "react-router-dom";
 import Moment from "moment";
 import pageStyle from "../../../css/CreatePage.module.css";
 import QuillEditor from "../QuillEditor/Editor";
+import { usePopup } from "../../Utilities/usePopup";
 
 export const CreatePage = () => {
+  const { showAlert } = usePopup("Create Page");
   const NavigateTo = useNavigate();
 
   const [pageDetails, setPageDetails] = useState({
@@ -72,11 +75,11 @@ export const CreatePage = () => {
 
     {
       Axios.post("http://localhost:3000/auth/pages", pageDetails)
-        .then((result) => {
+        .then(async (result) => {
           if (result.data.Status) {
             NavigateTo("/adminDashboard/pages");
           } else {
-            alert(result.data.Error);
+            await showAlert(result.data.Error);
           }
         })
         .catch((error) => console.log(error));
@@ -135,7 +138,7 @@ export const CreatePage = () => {
                 )
               }
             >
-              Upload
+              <ActionLabel action="upload">Upload</ActionLabel>
             </button>
           </div>
         </div>
@@ -193,7 +196,7 @@ export const CreatePage = () => {
             className="btn btn-success btn-block w-50"
             onClick={handleSave}
           >
-            Save
+            <ActionLabel action="save">Save</ActionLabel>
           </button>
         </div>
       </div>

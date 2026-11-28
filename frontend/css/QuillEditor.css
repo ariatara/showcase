@@ -33,24 +33,3 @@
 .ql-size-extra-extra-large {
   font-size: xx-large;
 }
-
-.ql-font-gill-sans {
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
-}
-
-.ql-font-courier-new {
-  font-family: "Courier New", Courier, monospace;
-}
-
-.ql-font-georgia {
-  font-family: Georgia, "Times New Roman", Times, serif;
-}
-
-.ql-font-verdana {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-}
-
-.ql-font-lucida {
-  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-    "Lucida Sans Unicode";
-}

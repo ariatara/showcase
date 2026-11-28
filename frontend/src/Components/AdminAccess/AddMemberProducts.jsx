@@ -1,3 +1,4 @@
+import ActionLabel from "../ActionLabel";
 import { useEffect, useState } from "react";
 import Axios from "axios";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -9,44 +10,54 @@ import PropTypes from "prop-types";
 import { ServerLocation } from "../../Utilities/Locations";
 import eventStyle from "../../../css/CreateEvent.module.css";
 import { OriginalFilesInList } from "../../Utilities/Formats";
+import { usePopup } from "../../Utilities/usePopup";
 
-const AddMemberProduct = ({ setProductDetails }) => {
+const AddMemberProduct = ({ setProductDetails, productReceipt }) => {
+  const { showAlert } = usePopup("Add Member Products");
   const [productTypes, setProductTypes] = useState([]);
 
   useEffect(() => {
     Axios.get(ServerLocation("/auth/productTypes"))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setProductTypes(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   const [productTargets, setProductTargets] = useState([]);
 
   useEffect(() => {
     Axios.get(ServerLocation("/auth/membershipCategories"))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           setProductTargets(result.data.Result);
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
-  }, []);
+  }, [showAlert]);
 
   const handleUpload = async (event, fieldName, fieldState) => {
     event.preventDefault();
 
-    const uploadedFileName = await UploadFileByFieldName(fieldName, fieldState);
+    try {
+      const uploadedFileName = await UploadFileByFieldName(
+        fieldName,
+        fieldState
+      );
 
-    console.log("Uploaded file:" + uploadedFileName);
+      console.log("Uploaded file:" + uploadedFileName);
 
-    return uploadedFileName;
+      return uploadedFileName;
+    } catch (error) {
+      await showAlert(error.response?.data?.Error || error.message);
+      return null;
+    }
   };
 
   const productSchema = Yup.object().shape({
@@ -62,7 +73,7 @@ const AddMemberProduct = ({ setProductDetails }) => {
           .required("Price is required"),
         productInventory: Yup.number()
           .typeError("Inventory must be a number")
-          .positive("Inventory must be a positive number")
+          .min(0, "Inventory cannot be negative")
           .required("Inventory is required")
           .integer("Inventory must be an integer"),
         eventDate: Yup.date()
@@ -72,22 +83,9 @@ const AddMemberProduct = ({ setProductDetails }) => {
     ),
   });
 
-  const products = [
-    {
-      productName: "",
-      productType: "",
-      productImage: "",
-      productTarget: "",
-      productPrice: "",
-      productInventory: "",
-      eventDate: "",
-    },
-  ];
-
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     formState: { errors },
     control,
@@ -96,33 +94,42 @@ const AddMemberProduct = ({ setProductDetails }) => {
   } = useForm({
     resolver: yupResolver(productSchema),
     defaultValues: {
-      productSchema: products,
+      products: [],
     },
   });
 
-  const { fields, append, prepend, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "products",
     control,
     rules: { required: "Add at least one product" },
   });
 
+  useEffect(() => {
+    productReceipt?.products.forEach((product, index) => {
+      setValue(`products.${index}.productId`, product.productId);
+      setValue(`products.${index}.version`, product.version);
+    });
+  }, [productReceipt, setValue]);
+
   const onSubmit = (formValues) => {
     setProductDetails(formValues.products);
   };
+
+  useEffect(() => {
+    const subscription = watch((values) => setProductDetails(values.products ?? []));
+    return () => subscription.unsubscribe();
+  }, [watch, setProductDetails]);
 
   return (
     <form
       className="row gy-2 gx-2 justify-content-evenly"
       onSubmit={handleSubmit(onSubmit)}
-      onChange={() => {
-        const formValues = getValues();
-        setProductDetails(formValues.products);
-      }}
     >
       <h6>Member Products:</h6>
       {fields.map((item, index) => {
         return (
-          <div key={item.id} className="row gy-2 gx-2 justify-left">
+          <div key={item.id} className="member-product-row">
+            <div className="row gy-2 gx-2 m-0">
             <div className="col-4">
               <div className={eventStyle.imageNames}>Product Name:</div>
               <label
@@ -204,13 +211,15 @@ const AddMemberProduct = ({ setProductDetails }) => {
                       "productImage",
                       imageFile[0]
                     );
-                    setValue(
-                      `products.${index}.productImage`,
-                      `${uploadedImageFile}`
-                    );
+                    if (uploadedImageFile) {
+                      setValue(
+                        `products.${index}.productImage`,
+                        uploadedImageFile
+                      );
+                    }
                   }}
                 >
-                  Upload
+                  <ActionLabel action="upload">Upload</ActionLabel>
                 </button>
                 <p>{errors.products?.[index]?.productImage?.message}</p>
               </div>
@@ -302,6 +311,7 @@ const AddMemberProduct = ({ setProductDetails }) => {
               ></input>
               <p>{errors.products?.[index]?.eventDate?.message}</p>
             </div>
+            </div>
             <div className="col-auto">
               <button
                 type="button"
@@ -335,6 +345,7 @@ const AddMemberProduct = ({ setProductDetails }) => {
 };
 
 AddMemberProduct.propTypes = {
+  productReceipt: PropTypes.shape({ products: PropTypes.array.isRequired }),
   setProductDetails: PropTypes.func.isRequired,
 };
 

@@ -1,8 +1,11 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddMembershipCategory = () => {
+  const { showAlert } = usePopup("Add Membership Category");
   const [membershipCategory, setMembershipCategory] = useState();
 
   const NavigateTo = useNavigate();
@@ -12,11 +15,11 @@ const AddMembershipCategory = () => {
     Axios.post("http://localhost:3000/auth/addMembershipCategory", {
       membershipCategory,
     })
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           NavigateTo("/adminDashboard/membershipCategories");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
@@ -38,7 +41,7 @@ const AddMembershipCategory = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 mb-1">
-            Add Membership Category
+            <ActionLabel action="add">Add Membership Category</ActionLabel>
           </button>
         </form>
       </div>

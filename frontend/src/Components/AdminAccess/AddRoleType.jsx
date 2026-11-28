@@ -1,8 +1,11 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddRoleType = () => {
+  const { showAlert } = usePopup("Add Role Type");
   const [roleType, setRoleType] = useState();
 
   const NavigateTo = useNavigate();
@@ -12,11 +15,11 @@ const AddRoleType = () => {
     Axios.post("http://localhost:3000/auth/addRoleType", {
       roleType,
     })
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           NavigateTo("/adminDashboard/roleTypes");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
@@ -38,7 +41,7 @@ const AddRoleType = () => {
             />
           </div>
           <button className="btn btn-success w-100 rounded-0 mb-1">
-            Add Role Type
+            <ActionLabel action="add">Add Role Type</ActionLabel>
           </button>
         </form>
       </div>

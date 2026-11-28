@@ -1,8 +1,11 @@
+import ActionLabel from "../ActionLabel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import { usePopup } from "../../Utilities/usePopup";
 
 const AddProductType = () => {
+  const { showAlert } = usePopup("Add Product Type");
   const [productType, setProductType] = useState();
 
   const NavigateTo = useNavigate();
@@ -12,11 +15,11 @@ const AddProductType = () => {
     Axios.post("http://localhost:3000/auth/addProductType", {
       productType,
     })
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           NavigateTo("/adminDashboard/productTypes");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
       .catch((error) => console.log(error));
@@ -37,8 +40,8 @@ const AddProductType = () => {
               onChange={(event) => setProductType(event.target.value)}
             />
           </div>
-          <button className="btn btn-custom w-100 rounded-1 mb-1">
-            Add Product Type
+          <button className="btn btn-primary w-100 rounded-1 mb-1">
+            <ActionLabel action="add">Add Product Type</ActionLabel>
           </button>
         </form>
       </div>

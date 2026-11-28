@@ -1,0 +1,32 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { commerceDatabase, seedCommerce, mysqlEnabled } from "./CommerceFixtures.js";
+import { CommerceStore } from "../Utilities/CommerceStore.js";
+
+test("owned multi-event cart enforces versions, eligibility and authoritative pricing", { skip: !mysqlEnabled }, async (t) => {
+  const { db, connect } = await commerceDatabase(t);
+  await seedCommerce(db);
+  const store = new CommerceStore(connect);
+  const catalog = await store.catalog(101, "first");
+  assert.equal(catalog.products[0].unit_cents, 1025);
+  let cart = await store.changeCart(101, "add", { productId: 101, memberId: 101, quantity: 2, version: 0 });
+  assert.equal(cart.lines.length, 1);
+  await assert.rejects(store.changeCart(101, "add", { productId: 102, memberId: 102, quantity: 1, version: 1 }), { status: 403 });
+  await assert.rejects(store.changeCart(101, "add", { productId: 102, memberId: 101, quantity: 1, version: 0 }), { status: 409 });
+  cart = await store.changeCart(101, "add", { productId: 102, memberId: 101, quantity: 1, version: 1 });
+  assert.equal(cart.lines.length, 2);
+  const quote = await store.quote(101, "");
+  assert.deepEqual(quote.amounts, { subtotal: 4050, discount: 0, fee: 0, total: 4050 });
+  await db.query("INSERT INTO commerce_coupons(code,kind,amount,max_uses) VALUES('SAVE','percent',1000,1)");
+  await store.saveSettings({ version: 1, fee_enabled: true, fee_basis_points: 290, fee_fixed_cents: 30 });
+  const discounted = await store.quote(101, "save");
+  assert.deepEqual(discounted.amounts, { subtotal: 4050, discount: 405, fee: 136, total: 3781 });
+  assert.notEqual(quote.hash, discounted.hash);
+  await assert.rejects(store.changeCart(102, "remove", { itemId: cart.lines[0].id, version: 0 }), { status: 404 });
+  cart = await store.changeCart(101, "update", { itemId: cart.lines[0].id, quantity: 1, version: cart.version });
+  assert.equal(cart.lines[0].quantity, 1);
+  cart = await store.changeCart(101, "remove", { itemId: cart.lines[1].id, version: cart.version });
+  assert.equal(cart.lines.length, 1);
+  await db.query("UPDATE account_roles SET account_role='Non-member' WHERE account_email='one@example.invalid'");
+  await assert.rejects(store.quote(101, ""), { status: 403 });
+});

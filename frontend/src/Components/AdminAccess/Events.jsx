@@ -1,20 +1,23 @@
+import ActionLabel from "../ActionLabel";
 import { useState, useEffect } from "react";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { ServerLocation } from "../../Utilities/Locations";
 import Moment from "moment";
+import { usePopup } from "../../Utilities/usePopup";
 
 const Events = () => {
+  const { showAlert, showConfirm } = usePopup("Events");
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        Axios.get(ServerLocation("/auth/events")).then((response) => {
+        Axios.get(ServerLocation("/auth/events")).then(async (response) => {
           if (response.data.Status) {
             setEvents(response.data.Result);
           } else {
-            alert(response.data.Error);
+            await showAlert(response.data.Error);
           }
         });
       } catch (error) {
@@ -23,7 +26,7 @@ const Events = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [showAlert]);
 
   const handleCopy = (id) => {
     const targetEvent = events.find((x) => x.id === id);
@@ -31,10 +34,10 @@ const Events = () => {
     const eventDetails = {
       pageTitle: targetEvent.page_title + " Copy",
       eventURL: targetEvent.url + "_copy",
-      eventTitle: targetEvent.event_title + " Copy",
-      startDate: targetEvent.start_date.split("T")[0],
+      eventTitle: targetEvent.event_title ? targetEvent.event_title + " Copy" : null,
+      startDate: targetEvent.start_date?.split("T")[0] ?? null,
       startTime: targetEvent.start_time,
-      endDate: targetEvent.end_date.split("T")[0],
+      endDate: targetEvent.end_date?.split("T")[0] ?? null,
       endTime: targetEvent.end_time,
       venueAddress: targetEvent.venue_address,
       mapLink: targetEvent.map_link,
@@ -45,7 +48,8 @@ const Events = () => {
       lowerHubContent: targetEvent.lower_hub_content,
       lowerHubBackground: targetEvent.lower_hub_background_image_name,
       lowerHubEventImages: targetEvent.lower_hub_event_image_names,
-      isPublished: targetEvent.published,
+      isPublished: false,
+      viewTemplate: targetEvent.view_template ?? "signature",
       createdBy: targetEvent.created_by,
       createdDateTime: Moment().format("YYYY-MM-DD HH:mm:ss"),
       modifiedBy: targetEvent.modified_by,
@@ -55,30 +59,30 @@ const Events = () => {
     console.log(eventDetails);
 
     Axios.post(ServerLocation("/auth/events"), eventDetails)
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
           window.location.reload();
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
-      .catch((error) => console.log(error));
+      .catch(async (error) => await showAlert(error.response?.data?.Error || error.message));
   };
 
-const handleDelete = (id) => {
-  if (window.confirm("Are you sure you want to delete this event?")) {
+const handleDelete = async (id) => {
+  if (await showConfirm("Are you sure you want to delete this event?", { title: "Delete Event", confirmLabel: "Delete", confirmAction: "delete" })) {
     Axios.delete(ServerLocation("/auth/events/" + id))
-      .then((result) => {
+      .then(async (result) => {
         if (result.data.Status) {
-          setEvents(events.filter(event => event.id !== id));
-          alert("Event deleted successfully!");
+          setEvents((current) => current.filter(event => event.id !== id));
+          await showAlert("Event deleted successfully!");
         } else {
-          alert(result.data.Error);
+          await showAlert(result.data.Error);
         }
       })
-      .catch((error) => {
+      .catch(async (error) => {
         console.log(error);
-        alert("Failed to delete event. Please try again.");
+        await showAlert(error.response?.data?.Error || "Failed to delete event. Please try again.");
       });
   }
 };
@@ -88,8 +92,8 @@ const handleDelete = (id) => {
       <div className="d-flex justify-content-center">
         <h4>Event List</h4>
       </div>
-      <Link to="/adminDashboard/addEvent" className="btn btn-custom">
-        Add Event
+      <Link to="/adminDashboard/addEvent" className="btn btn-primary">
+        <ActionLabel action="add">Create Event</ActionLabel>
       </Link>
       <div className="mt-3">
         <table className="table">
@@ -101,42 +105,44 @@ const handleDelete = (id) => {
               <th>Start Time</th>
               <th>End Date</th>
               <th>End Time</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {events.map((x) => (
               <tr key={x.id}>
-                <td>{x.event_title}</td>
+                <td>{x.event_title || x.page_title}</td>
                 <td>{x.venue_address}</td>
-                <td>{x.start_date.substring(0, 10)}</td>
+                <td>{x.start_date?.substring(0, 10) || "-"}</td>
                 <td>{x.start_time}</td>
-                <td>{x.end_date.substring(0, 10)}</td>
+                <td>{x.end_date?.substring(0, 10) || "-"}</td>
                 <td>{x.end_time}</td>
+                <td>{x.published ? "Published" : "Draft"}</td>
                 <td>
-                  <Link
-                    to={"/events/" + x.url}
+                  {Boolean(x.published) && <Link
+                    to={"/events/" + encodeURIComponent(x.url)}
                     className="btn btn-custom btn-sm me-2"
                   >
-                    View
-                  </Link>
+                    <ActionLabel action="view">View</ActionLabel>
+                  </Link>}
                   <Link
-                    to={"/adminDashboard/editEvent/" + x.url}
-                    className="btn btn-custom btn-sm me-2"
+                    to={"/adminDashboard/editEvent/" + encodeURIComponent(x.url)}
+                    className="btn btn-success btn-sm me-2"
                   >
-                    Edit
+                    <ActionLabel action="edit">Edit</ActionLabel>
                   </Link>
                   <button
-                    className="btn btn-custom btn-sm me-2"
+                    className="btn btn-copy btn-sm me-2"
                     onClick={() => handleCopy(x.id)}
                   >
-                    Copy
+                    <ActionLabel action="copy">Copy</ActionLabel>
                   </button>
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(x.id)}
                   >
-                    Delete
+                    <ActionLabel action="delete">Delete</ActionLabel>
                   </button>
                 </td>
               </tr>

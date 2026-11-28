@@ -1,0 +1,22 @@
+.page { padding: 94px 20px 110px; background: #101419; color: #f5f3ee; min-height: 100vh; }
+.content { max-width: 1240px; margin: auto; min-width: 0; }
+.hero { min-height: 420px; display: flex; align-items: flex-end; background: #222a33 center/cover; border-radius: 20px; overflow: hidden; }
+.heroText { padding: clamp(24px, 5vw, 64px); max-width: 950px; }
+.hero h1 { color: #fff; font-size: clamp(2rem, 4.5vw, 4rem); line-height: 1.1; margin: 0; overflow-wrap: anywhere; }
+.heroText::before { content: ""; display: block; background: #ff985c; width: 70px; height: 5px; margin-bottom: 24px; }
+.essentials { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 24px; padding: 30px; border: 1px solid #424b54; border-radius: 16px; margin: 24px 0; background: #1e252d; }
+.essentials h2 { text-transform: uppercase; letter-spacing: .1em; font-size: .85rem; color: #ffad7d; }
+.essentials p { margin: 10px 0; line-height: 1.7; overflow-wrap: anywhere; }
+.page a { color: #ffb487; text-underline-offset: 4px; }
+.page a:focus-visible { outline: 3px solid #ffb487; outline-offset: 4px; }
+.hub { border-radius: 16px; background: #1e252d center/cover; padding: 24px; margin: 24px 0; border: 1px solid #424b54; min-width: 0; }
+.richText { padding: 12px; font-size: 1.05rem; line-height: 1.8; overflow-wrap: anywhere; }
+.richText img, .richText video, .richText iframe { max-width: 100%; }
+.richText > :last-child { margin-bottom: 0; }
+.hub .richText { height: auto; min-height: 0; overflow: visible; }
+@media (max-width: 640px) {
+  .page { padding-left: 12px; padding-right: 12px; }
+  .hero { min-height: 340px; }
+  .essentials { grid-template-columns: 1fr; padding: 22px; gap: 18px; }
+  .hub { padding: 8px; }
+}
